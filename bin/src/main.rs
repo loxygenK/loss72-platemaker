@@ -28,7 +28,7 @@ fn main() -> Result<(), &'static str> {
             Commands::Watch(_) => watch(&config),
         }
     })
-    .map_err(|_| "Failed due to error above")
+    .map_err(|_| "Failed due to the error above")
 }
 
 fn build(config: &Configuration) -> Result<(), anyhow::Error> {
