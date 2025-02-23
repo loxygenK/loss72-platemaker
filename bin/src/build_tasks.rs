@@ -34,11 +34,8 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
 
     let result = build_files(config, files).and_then(|_| copy_template_files(config));
 
-    match result {
-        Ok(()) => {
-            log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display())
-        }
-        Err(e) => panic!("{}", e),
+    if result.is_ok() {
+        log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display())
     }
 
     result
@@ -65,7 +62,6 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
             articles
         }
         Err(error) => {
-            log!(warn: "There was an error during parse:\n{}", error);
             return Err(error.into());
         }
     };
@@ -83,7 +79,6 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
             htmls
         }
         Err(error) => {
-            log!(warn: "There was an error during article page generation:\n{}", error);
             return Err(error.into());
         }
     };
