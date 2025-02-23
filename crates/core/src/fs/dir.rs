@@ -83,17 +83,17 @@ impl Directory {
     > {
         Ok(self.path()
             .read_dir()?
-            .map(|entry| entry.map(|entry| {
+            .flat_map(|entry| entry.map(|entry| {
                 let path = entry.path();
 
                 if path.is_file() {
-                    File::new(path.to_path_buf()).map(FSNode::File)
+                    File::new(&path).map(FSNode::File)
                 } else if path.is_dir() {
-                    Directory::new(path.to_path_buf()).map(FSNode::Directory)
+                    Directory::new(&path).map(FSNode::Directory)
                 } else {
                     Ok(FSNode::Unknown(path.to_path_buf()))
                 }
-            })).flatten())
+            })))
     }
 
     pub fn try_iter_tree(&self) -> Result<RecursiveIterator, std::io::Error> {

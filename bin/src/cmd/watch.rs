@@ -29,10 +29,10 @@ pub fn watch_for_change(config: &Configuration) -> Result<(), WatcherError> {
     let (ctrlc_tx, ctrlc_rx) = unbounded::<()>();
 
     let mut markdown_watcher = new_debouncer(Duration::from_millis(500), None, md_tx)?;
-    markdown_watcher.watch(&config.article_md_dir.path(), RecursiveMode::Recursive)?;
+    markdown_watcher.watch(config.article_md_dir.path(), RecursiveMode::Recursive)?;
 
     let mut template_watcher = new_debouncer(Duration::from_millis(500), None, tpl_tx)?;
-    template_watcher.watch(&config.html_template_dir.path(), RecursiveMode::Recursive)?;
+    template_watcher.watch(config.html_template_dir.path(), RecursiveMode::Recursive)?;
 
     if let Err(e) = ctrlc::set_handler(move || {
         ctrlc_tx.send(()).ok();

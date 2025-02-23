@@ -11,10 +11,9 @@ pub fn copy_dir_recursively(
         dir,
         dest,
         &dir.try_iter_tree()?
-            .into_iter()
             .filter(|file| {
                 let Ok(file) = file else { return true; };
-                !excluded(dir.path(), file.path(), &excludes)
+                !excluded(dir.path(), file.path(), excludes)
             })
             .collect::<Result<Vec<_>, _>>()?
     )

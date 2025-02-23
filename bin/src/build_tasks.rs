@@ -104,7 +104,7 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
 
 
 pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResult<()> {
-    if files.len() == 0 {
+    if files.is_empty() {
         return Ok(());
     }
 
@@ -114,7 +114,7 @@ pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResu
 
     if files.iter().any(|file| file.path() == template_file.as_path()) {
         log!(warn: "Article page template file is updated! Rebuilding all articles.");
-        full_build(&config)?;
+        full_build(config)?;
     }
 
     copy_files(

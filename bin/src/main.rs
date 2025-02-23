@@ -25,11 +25,11 @@ fn main() -> Result<(), anyhow::Error> {
 }
 
 fn build(config: &Configuration) -> Result<(), anyhow::Error> {
-    Ok(full_build(&config)?)
+    Ok(full_build(config)?)
 }
 
 fn watch(config: &Configuration) -> Result<(), anyhow::Error> {
-    Ok(watch_for_change(&config)?)
+    Ok(watch_for_change(config)?)
 }
 
 fn read_config(path: &Path) -> Result<Configuration, anyhow::Error> {
