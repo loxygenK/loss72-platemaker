@@ -13,11 +13,11 @@ use clap::Parser;
 use cli::Commands;
 use cmd::{build::full_build, watch::watch_for_change};
 use config::{Configuration, ConfigurationScheme};
-use error::report_if_fail;
+use error::report_anyway_if_fail;
 use loss72_platemaker_core::{fs::File, log};
 
 fn main() -> Result<(), &'static str> {
-    report_if_fail(|| {
+    report_anyway_if_fail(|| {
         let args = Commands::parse();
 
         let config = read_config(args.config())?;

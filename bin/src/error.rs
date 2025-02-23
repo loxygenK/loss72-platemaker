@@ -15,3 +15,13 @@ pub fn report_if_fail<T, E: Display>(func: impl FnOnce() -> Result<T, E>) -> Res
 
     result
 }
+
+pub fn report_anyway_if_fail<T>(func: impl FnOnce() -> anyhow::Result<T>) -> anyhow::Result<T> {
+    let result = func();
+
+    if let Err(e) = &result {
+        log!(warn: "{:?}", e);
+    };
+
+    result
+}
