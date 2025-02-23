@@ -1,3 +1,5 @@
+#![deny(clippy::unwrap_used)]
+
 use std::sync::LazyLock;
 
 use regex::{Captures, Regex};
@@ -27,8 +29,9 @@ impl Placeholder {
         end: &str,
         content_regex: impl Into<Option<Regex>>,
     ) -> Result<Self, PlaceholderError> {
-        static ESCAPE_REGEX: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new(r"([\[\]{}()^$])").unwrap());
+        static ESCAPE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+            Regex::new(r"([\[\]{}()^$])").expect("Statically provided regex to be valid")
+        });
 
         let [start, end] =
             [start, end].map(|parenthesis| ESCAPE_REGEX.replace_all(parenthesis, r"\$1"));
@@ -70,12 +73,30 @@ impl Placeholder {
         haystack: &'haystack str,
     ) -> impl Iterator<Item = String> + 'iter {
         self.regex.captures_iter(haystack).map(|capture| {
-            let placeholder = capture.name(REGEX_CAPTURE_GROUP).unwrap();
+            let placeholder = capture
+                .name(REGEX_CAPTURE_GROUP)
+                .expect("Regex is validated to include the capture group");
             placeholder.as_str().to_string()
         })
     }
 
     pub fn fill_placeholders(
+        &self,
+        haystack: &str,
+        mut filler: impl FnMut(&str) -> String,
+    ) -> String {
+        self.regex
+            .replace_all(haystack, |capture: &Captures| -> String {
+                let name = capture
+                    .name(REGEX_CAPTURE_GROUP)
+                    .expect("Regex is validated to include the capture group")
+                    .as_str();
+                filler(name)
+            })
+            .to_string()
+    }
+
+    pub fn partially_fill_placeholders(
         &self,
         haystack: &str,
         mut filler: impl FnMut(&str) -> Option<String>,
@@ -85,7 +106,10 @@ impl Placeholder {
         let replaced = self
             .regex
             .replace_all(haystack, |capture: &Captures| -> String {
-                let name = capture.name(REGEX_CAPTURE_GROUP).expect("").as_str();
+                let name = capture
+                    .name(REGEX_CAPTURE_GROUP)
+                    .expect("Regex is validated to include the capture group")
+                    .as_str();
 
                 let Some(replace_by) = filler(name) else {
                     failed_replaces.push(name.to_string());
@@ -113,7 +137,8 @@ mod tests {
 
     #[test]
     pub fn shell_style() {
-        let placeholder = Placeholder::from_strs("${", "}", None).unwrap();
+        let placeholder = Placeholder::from_strs("${", "}", None)
+            .expect("Placeholder::from_strs not to error for valid arguments.");
 
         println!("{}", placeholder.regex.as_str());
 
@@ -139,7 +164,12 @@ mod tests {
 
     #[test]
     pub fn shell_style_with_numeric_only() {
-        let placeholder = Placeholder::from_strs("${", "}", Regex::new("[0-9]+").unwrap()).unwrap();
+        let placeholder = Placeholder::from_strs(
+            "${",
+            "}",
+            Regex::new("[0-9]+").expect("[0-9]+ to be a valid regex"),
+        )
+        .expect("Placeholder::from_strs not to error for valid arguments.");
         println!("{}", placeholder.regex.as_str());
 
         assert_eq!(
@@ -154,12 +184,14 @@ mod tests {
     pub fn fill_shell_style_placeholder() {
         let replace_dataset = HashMap::from([("title", "foo"), ("description", "bar")]);
 
-        let placeholder = Placeholder::from_strs("${", "}", None).unwrap();
+        let placeholder = Placeholder::from_strs("${", "}", None)
+            .expect("Placeholder::from_strs not to error for valid arguments.");
 
         assert_eq!(
-            placeholder.fill_placeholders("Title: ${title}, Description: ${description}", |name| {
-                replace_dataset.get(name).map(|value| value.to_string())
-            }),
+            placeholder.partially_fill_placeholders(
+                "Title: ${title}, Description: ${description}",
+                |name| { replace_dataset.get(name).map(|value| value.to_string()) }
+            ),
             Ok("Title: foo, Description: bar".to_string()),
         );
     }

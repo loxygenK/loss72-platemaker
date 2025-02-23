@@ -31,8 +31,7 @@ impl Commands {
     pub fn config(&self) -> &Path {
         match self {
             Commands::Build(build_args) => &build_args.config,
-            Commands::Watch(watch_args) => &watch_args.config
+            Commands::Watch(watch_args) => &watch_args.config,
         }
     }
 }
-

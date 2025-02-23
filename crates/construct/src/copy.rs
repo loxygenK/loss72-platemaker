@@ -1,6 +1,9 @@
 use std::path::{Path, PathBuf};
 
-use loss72_platemaker_core::{fs::{Directory, File}, log};
+use loss72_platemaker_core::{
+    fs::{Directory, File},
+    log,
+};
 
 pub fn copy_dir_recursively(
     dir: &Directory,
@@ -12,18 +15,16 @@ pub fn copy_dir_recursively(
         dest,
         &dir.try_iter_tree()?
             .filter(|file| {
-                let Ok(file) = file else { return true; };
+                let Ok(file) = file else {
+                    return true;
+                };
                 !excluded(dir.path(), file.path(), excludes)
             })
-            .collect::<Result<Vec<_>, _>>()?
+            .collect::<Result<Vec<_>, _>>()?,
     )
 }
 
-pub fn copy_files(
-    dir: &Directory,
-    dest: &Directory,
-    files: &[File]
-) -> Result<(), std::io::Error> {
+pub fn copy_files(dir: &Directory, dest: &Directory, files: &[File]) -> Result<(), std::io::Error> {
     for file in files {
         log!(step: "Copying file: {}", file.path().display());
 
@@ -52,4 +53,3 @@ fn excluded(root: &Path, path: &Path, excludes: &[PathBuf]) -> bool {
         }
     })
 }
-

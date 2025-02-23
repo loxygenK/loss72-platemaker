@@ -1,27 +1,34 @@
-mod cli;
-mod config;
-pub mod cmd;
+#![deny(clippy::unwrap_used)]
+
 pub mod build_tasks;
+mod cli;
+pub mod cmd;
+mod config;
+pub mod error;
 
 use std::path::Path;
 
 use anyhow::Context;
 use clap::Parser;
 use cli::Commands;
-use config::{Configuration, ConfigurationScheme};
-use loss72_platemaker_core::{fs::File, log};
 use cmd::{build::full_build, watch::watch_for_change};
+use config::{Configuration, ConfigurationScheme};
+use error::report_if_fail;
+use loss72_platemaker_core::{fs::File, log};
 
-fn main() -> Result<(), anyhow::Error> {
-    let args = Commands::parse();
+fn main() -> Result<(), &'static str> {
+    report_if_fail(|| {
+        let args = Commands::parse();
 
-    let config = read_config(args.config())?;
+        let config = read_config(args.config())?;
 
-    println!();
-    match args {
-        Commands::Build(_) => build(&config),
-        Commands::Watch(_) => watch(&config),
-    }
+        println!();
+        match args {
+            Commands::Build(_) => build(&config),
+            Commands::Watch(_) => watch(&config),
+        }
+    })
+    .map_err(|_| "Failed due to error above")
 }
 
 fn build(config: &Configuration) -> Result<(), anyhow::Error> {

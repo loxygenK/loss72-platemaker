@@ -1,8 +1,8 @@
 use loss72_platemaker_construct::{copy_dir_recursively, copy_files};
 use loss72_platemaker_core::{fs::File, log};
-use loss72_platemaker_markdown::{parse_markdown, MarkdownProcessError};
+use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
 use loss72_platemaker_website::{
-    generate_article_html, get_webpage_construction, load_templates, WebsiteGenerationError,
+    WebsiteGenerationError, generate_article_html, get_webpage_construction, load_templates,
 };
 
 use crate::config::Configuration;
@@ -24,23 +24,20 @@ pub type TaskResult<T> = Result<T, TaskError>;
 pub fn full_build(config: &Configuration) -> TaskResult<()> {
     log!(job_start: "Building all articles in {}", config.article_md_dir.path().display());
 
-    let files = config
-        .article_md_dir
-        .try_iter_tree()
-        .unwrap()
-        .filter_map(|file| {
-            if let Err(error) = &file {
-                log!(warn: "There was an error during traversing direcotry: {}", error);
-            }
+    let files = config.article_md_dir.try_iter_tree()?.filter_map(|file| {
+        if let Err(error) = &file {
+            log!(warn: "There was an error during traversing direcotry: {}", error);
+        }
 
-            file.ok()
-        });
+        file.ok()
+    });
 
-    let result = build_files(config, files)
-        .and_then(|_| Ok(copy_template_files(config)?));
+    let result = build_files(config, files).and_then(|_| copy_template_files(config));
 
     match result {
-        Ok(()) => log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display()),
+        Ok(()) => {
+            log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display())
+        }
         Err(e) => panic!("{}", e),
     }
 
@@ -95,13 +92,12 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
 
     let construction = get_webpage_construction(htmls.as_slice());
     let plan = construction.plan(config.destination.path());
-    plan.execute().unwrap();
+    plan.execute()?;
 
     log!(ok: "Wrote pages");
 
     Ok(())
 }
-
 
 pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResult<()> {
     if files.is_empty() {
@@ -112,31 +108,29 @@ pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResu
 
     let template_file = config.html_template_dir.path().join("_article.html");
 
-    if files.iter().any(|file| file.path() == template_file.as_path()) {
+    if files
+        .iter()
+        .any(|file| file.path() == template_file.as_path())
+    {
         log!(warn: "Article page template file is updated! Rebuilding all articles.");
         full_build(config)?;
     }
 
-    copy_files(
-        &config.html_template_dir,
-        &config.destination,
-        files,
-    ).unwrap();
+    copy_files(&config.html_template_dir, &config.destination, files)?;
 
     log!(job_end: "Updated template files");
 
     Ok(())
 }
 
-pub fn copy_template_files(config: &Configuration) -> Result<(), std::io::Error> {
+pub fn copy_template_files(config: &Configuration) -> TaskResult<()> {
     log!(section: "Copying files in template directory");
 
     copy_dir_recursively(
         &config.html_template_dir,
         &config.destination,
-        &["_article.html".into()]
-    ).unwrap();
+        &["_article.html".into()],
+    )?;
 
     Ok(())
 }
-

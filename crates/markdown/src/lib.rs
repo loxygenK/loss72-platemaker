@@ -1,9 +1,11 @@
-use parse::{make_article_from_markdown, ParseError};
+#![deny(clippy::unwrap_used)]
+
 use loss72_platemaker_core::{
     fs::{Directory, File},
     log,
     model::Article,
 };
+use parse::{ParseError, make_article_from_markdown};
 
 mod emoji;
 mod frontmatter;

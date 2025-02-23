@@ -1,20 +1,24 @@
 use std::path::{Component, Path};
 
 use super::{emoji::replace_emoji_from_shortcode, frontmatter::parse_toml_to_metadata};
-use markdown::{mdast, Options};
 use loss72_platemaker_core::model::Article;
+use markdown::{Options, mdast};
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum ParseError {
-    #[error("The file is at the invalid location. Expected markdown files to be placed at `./$year/$month/$day[-$num]_$slug.md`.")]
+    #[error(
+        "The file is at the invalid location. Expected markdown files to be placed at `./$year/$month/$day[-$num]_$slug.md`."
+    )]
     InvalidStructure,
 
     #[error("The file is at the path where cannot be represented in UTF-8.")]
     InvalidPath,
 
-    #[error("No TOML frontmatter was found. Write TOML frontmatter wrapped with `+++` at the top of the markdown content.")]
+    #[error(
+        "No TOML frontmatter was found. Write TOML frontmatter wrapped with `+++` at the top of the markdown content."
+    )]
     NoFrontmatter,
 
     #[error("The frontmatter could not be parsed or not valid metadata:\n{0}")]
@@ -89,8 +93,9 @@ fn parse_markdown(content: &str) -> ParseResult<ParsedContent> {
 
     // Safety: Markdown is always parsable (but MDX is not - we are only parsing Markdown),
     //         so the Result is practically infallible here
-    let html = markdown::to_html_with_options(content, &options).unwrap();
-    let node = markdown::to_mdast(content, &options.parse).unwrap();
+    let html =
+        markdown::to_html_with_options(content, &options).expect("Markdown to be always parsable");
+    let node = markdown::to_mdast(content, &options.parse).expect("Markdown to be always parsable");
 
     let mdast::Node::Root(root) = node else {
         panic!("Expected the topmost node is Root (developer oversight)");

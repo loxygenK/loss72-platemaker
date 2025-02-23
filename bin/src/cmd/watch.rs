@@ -1,15 +1,16 @@
-use std::{
-    path::PathBuf,
-    time::Duration,
-};
+use std::{path::PathBuf, time::Duration};
 
-use crossbeam_channel::{select, unbounded, RecvError};
+use crossbeam_channel::{RecvError, select, unbounded};
 
-use notify::{EventKind, RecursiveMode};
-use notify_debouncer_full::{new_debouncer, DebounceEventResult};
 use loss72_platemaker_core::{fs::File, log};
+use notify::{EventKind, RecursiveMode};
+use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
-use crate::{build_tasks::{build_files, update_template_files}, config::Configuration};
+use crate::{
+    build_tasks::{build_files, update_template_files},
+    config::Configuration,
+    error::report_error,
+};
 
 #[derive(thiserror::Error, Debug)]
 pub enum WatcherError {
@@ -55,14 +56,18 @@ pub fn watch_for_change(config: &Configuration) -> Result<(), WatcherError> {
                     continue;
                 };
 
-                build_files(config, files.into_iter()).unwrap();
+                build_files(config, files.into_iter())
+                    .inspect_err(report_error)
+                    .ok();
             },
             recv(tpl_rx) -> received => {
                 let Some(files) = handle_notify_event(received) else {
                     continue;
                 };
 
-                update_template_files(config, &files).unwrap();
+                update_template_files(config, &files)
+                    .inspect_err(report_error)
+                    .ok();
             },
             recv(ctrlc_rx) -> _ => {
                 println!();
@@ -100,13 +105,11 @@ fn handle_notify_event(received: Result<DebounceEventResult, RecvError>) -> Opti
                 _ => vec![],
             })
             .filter(|path| path.exists())
-            .filter_map(|file| {
-                match File::new(file) {
-                    Ok(file) => Some(file),
-                    Err(error) => {
-                        log!(warn: "There was an error during checking what changed: {}", error);
-                        None
-                    }
+            .filter_map(|file| match File::new(file) {
+                Ok(file) => Some(file),
+                Err(error) => {
+                    log!(warn: "There was an error during checking what changed: {}", error);
+                    None
                 }
             })
             .collect(),

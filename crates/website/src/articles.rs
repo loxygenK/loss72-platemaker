@@ -26,7 +26,10 @@ impl<'p> From<&'p ArticlePage<'_>> for ConstructFile<'p> {
 
 impl std::fmt::Debug for ArticlePage<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct(type_name::<Self>().rsplit("::").next().unwrap())
+        let type_name = type_name::<Self>();
+        let type_name = type_name.rsplit("::").next().unwrap_or(type_name);
+
+        f.debug_struct(type_name)
             .field("article", self.article)
             .field(
                 "html",
@@ -46,7 +49,8 @@ pub fn generate_article_html<'article>(
 ) -> OutputResult<ArticlePage<'article>> {
     log!(step: "Generating HTML for slug '{}'", &article.slug);
 
-    let placeholder = Placeholder::from_strs("${", "}", None).unwrap();
+    let placeholder = Placeholder::from_strs("${", "}", None)
+        .expect("Regex is validated to include the capture group");
 
     let placeholder_contents = HashMap::from([
         ("title", article.metadata.title.clone()),
@@ -58,7 +62,7 @@ pub fn generate_article_html<'article>(
     Ok(ArticlePage {
         article,
         html: placeholder
-            .fill_placeholders(&html_templates.article, |name| {
+            .partially_fill_placeholders(&html_templates.article, |name| {
                 placeholder_contents.get(name).cloned()
             })
             .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?,

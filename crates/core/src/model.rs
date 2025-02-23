@@ -14,7 +14,10 @@ pub struct Article {
 
 impl std::fmt::Debug for Article {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct(type_name::<Self>().rsplit("::").next().unwrap())
+        let type_name = type_name::<Self>();
+        let type_name = type_name.rsplit("::").next().unwrap_or(type_name);
+
+        f.debug_struct(type_name)
             .field("group", &self.group)
             .field("slug", &self.slug)
             .field("metadata", &self.metadata)

@@ -63,11 +63,12 @@ impl Directory {
         &self,
         paths: &[&impl AsRef<Path>; N],
     ) -> FileSystemResult<[File; N]> {
-        let mut files: [Option<File>; N] = [const { None }; N];
-        for (i, path) in paths.iter().enumerate() {
-            files[i] = Some(self.get_file(path)?);
-        }
-        Ok(files.map(|file| file.unwrap()))
+        Ok(paths
+            .iter()
+            .map(|path| self.get_file(path))
+            .collect::<Result<Vec<_>, _>>()?
+            .try_into()
+            .expect("paths to be initialized in N-sized array as type parameter notes"))
     }
 
     pub fn get_files_vec(&self, files: &[&impl AsRef<Path>]) -> FileSystemResult<Vec<File>> {
@@ -77,13 +78,11 @@ impl Directory {
             .collect::<Result<_, _>>()
     }
 
-    pub fn iter_content(&self) -> Result<
-        impl Iterator<Item = Result<FSNode, FileSystemError>>,
-        std::io::Error
-    > {
-        Ok(self.path()
-            .read_dir()?
-            .flat_map(|entry| entry.map(|entry| {
+    pub fn iter_content(
+        &self,
+    ) -> Result<impl Iterator<Item = Result<FSNode, FileSystemError>>, std::io::Error> {
+        Ok(self.path().read_dir()?.flat_map(|entry| {
+            entry.map(|entry| {
                 let path = entry.path();
 
                 if path.is_file() {
@@ -93,7 +92,8 @@ impl Directory {
                 } else {
                     Ok(FSNode::Unknown(path.to_path_buf()))
                 }
-            })))
+            })
+        }))
     }
 
     pub fn try_iter_tree(&self) -> Result<RecursiveIterator, std::io::Error> {
@@ -131,15 +131,21 @@ impl Iterator for RecursiveIterator {
 
             let path = file.path();
             if path.is_dir() {
-                self.child = match RecursiveIterator::new(&path) {
-                    Ok(iter) => Some(Box::new(iter)),
+                let mut child = match RecursiveIterator::new(&path) {
+                    Ok(iter) => iter,
                     Err(err) => return Some(Err(err)),
                 };
-                return self.child.as_mut().unwrap().next();
+
+                let next = child.next();
+
+                self.child = Some(Box::new(child));
+                return next;
             }
 
             if path.is_file() {
-                return Some(Ok(File::new(&path).unwrap()));
+                // Safety: Entry should be exist at this point, and
+                //         its type is also checked in this if block
+                return Some(Ok(File::new(&path).expect("entry to be exist and file")));
             }
         }
 

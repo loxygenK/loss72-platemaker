@@ -1,14 +1,17 @@
 use loss72_platemaker_construct::copy_dir_recursively;
 use loss72_platemaker_core::{fs::File, log};
-use loss72_platemaker_markdown::{parse_markdown, MarkdownProcessError};
+use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
 use loss72_platemaker_website::{
-    generate_article_html, get_webpage_construction, load_templates, WebsiteGenerationError,
+    WebsiteGenerationError, generate_article_html, get_webpage_construction, load_templates,
 };
 
 use crate::config::Configuration;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskError {
+    #[error("There was an error during I/O operation: {0}")]
+    IOError(#[from] std::io::Error),
+
     #[error(transparent)]
     Markdown(#[from] MarkdownProcessError),
 
@@ -23,21 +26,19 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
 
     let result = build_files(
         config,
-        config
-            .article_md_dir
-            .try_iter_tree()
-            .unwrap()
-            .filter_map(|file| {
-                if let Err(error) = &file {
-                    log!(warn: "There was an error during traversing direcotry: {}", error);
-                }
+        config.article_md_dir.try_iter_tree()?.filter_map(|file| {
+            if let Err(error) = &file {
+                log!(warn: "There was an error during traversing direcotry: {}", error);
+            }
 
-                file.ok()
-            }),
+            file.ok()
+        }),
     );
 
     match result {
-        Ok(()) => log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display()),
+        Ok(()) => {
+            log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display())
+        }
         Err(e) => panic!("{}", e),
     }
 
@@ -86,7 +87,7 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
 
     let construction = get_webpage_construction(htmls.as_slice());
     let plan = construction.plan(config.destination.path());
-    plan.execute().unwrap();
+    plan.execute()?;
 
     log!(ok: "Wrote pages");
 
@@ -95,9 +96,8 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
     copy_dir_recursively(
         &config.html_template_dir,
         &config.destination,
-        &["_article.html".into()]
-    ).unwrap();
+        &["_article.html".into()],
+    )?;
 
     Ok(())
 }
-

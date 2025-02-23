@@ -19,7 +19,10 @@ pub struct ConstructFile<'c> {
 
 impl std::fmt::Debug for ConstructFile<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct(type_name::<Self>().rsplit("::").next().unwrap())
+        let type_name = type_name::<Self>();
+        let type_name = type_name.rsplit("::").next().unwrap_or(type_name);
+
+        f.debug_struct(type_name)
             .field("path", &self.path)
             .field(
                 "content",
