@@ -1,0 +1,10 @@
+[package]
+name = "loss72-platemaker-website"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+loss72-platemaker-construct = { version = "0.1.0", path = "../construct" }
+loss72-platemaker-core = { version = "0.1.0", path = "../core" }
+loss72-platemaker-template = { version = "0.1.0", path = "../template" }
+thiserror = "2.0.11"

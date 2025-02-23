@@ -1,0 +1,13 @@
+[package]
+name = "loss72-platemaker-markdown"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+emojis = "0.6.4"
+loss72-platemaker-core = { version = "0.1.0", path = "../core" }
+markdown = "1.0.0-alpha.21"
+thiserror = "2.0.11"
+loss72-platemaker-template = { version = "0.1.0", path = "../template" }
+regex = "1.11.1"
+toml = "0.8.19"

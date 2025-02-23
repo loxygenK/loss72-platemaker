@@ -1,0 +1,19 @@
+[package]
+name = "loss72-platemaker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.95"
+clap = { version = "4.5.27", features = ["derive"] }
+crossbeam-channel = "0.5.14"
+ctrlc = "3.4.5"
+notify = { version = "8.0.0", features = ["crossbeam-channel"] }
+notify-debouncer-full = { version = "0.5.0", features = ["crossbeam-channel"] }
+loss72-platemaker-construct = { version = "0.1.0", path = "../crates/construct" }
+loss72-platemaker-core = { version = "0.1.0", path = "../crates/core" }
+loss72-platemaker-markdown = { version = "0.1.0", path = "../crates/markdown" }
+loss72-platemaker-website = { version = "0.1.0", path = "../crates/website" }
+serde = { version = "1.0.217", features = ["derive"] }
+thiserror = "2.0.11"
+toml = "0.8.19"
