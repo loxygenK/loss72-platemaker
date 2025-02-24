@@ -2,6 +2,8 @@ use std::path::{Path, PathBuf};
 
 use clap::Parser;
 
+use crate::cmd::watch::WatchParam;
+
 #[derive(Parser, Debug)]
 #[command()]
 pub enum Commands {
@@ -25,6 +27,10 @@ pub struct WatchArgs {
     /// Path to config,
     #[arg(short, long, default_value = "./platemaker.toml")]
     pub config: PathBuf,
+
+    /// Full build before watching. Failing to this build does not abort watching.
+    #[arg(short, long, default_value_t = false)]
+    pub build_first: bool,
 }
 
 impl Commands {
@@ -32,6 +38,14 @@ impl Commands {
         match self {
             Commands::Build(build_args) => &build_args.config,
             Commands::Watch(watch_args) => &watch_args.config,
+        }
+    }
+}
+
+impl From<WatchArgs> for WatchParam {
+    fn from(value: WatchArgs) -> Self {
+        Self {
+            build_first: value.build_first,
         }
     }
 }

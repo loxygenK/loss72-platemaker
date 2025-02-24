@@ -11,7 +11,10 @@ use std::path::Path;
 use anyhow::Context;
 use clap::Parser;
 use cli::Commands;
-use cmd::{build::full_build, watch::watch_for_change};
+use cmd::{
+    build::full_build,
+    watch::{WatchParam, watch_for_change},
+};
 use config::{Configuration, ConfigurationScheme};
 use error::report_anyway_if_fail;
 use loss72_platemaker_core::{fs::File, log};
@@ -25,7 +28,7 @@ fn main() -> Result<(), &'static str> {
         println!();
         match args {
             Commands::Build(_) => build(&config),
-            Commands::Watch(_) => watch(&config),
+            Commands::Watch(args) => watch(&config, &args.into()),
         }
     })
     .map_err(|_| "Failed due to the error above")
@@ -35,8 +38,8 @@ fn build(config: &Configuration) -> Result<(), anyhow::Error> {
     Ok(full_build(config)?)
 }
 
-fn watch(config: &Configuration) -> Result<(), anyhow::Error> {
-    Ok(watch_for_change(config)?)
+fn watch(config: &Configuration, param: &WatchParam) -> Result<(), anyhow::Error> {
+    Ok(watch_for_change(config, param)?)
 }
 
 fn read_config(path: &Path) -> Result<Configuration, anyhow::Error> {

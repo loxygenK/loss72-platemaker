@@ -7,10 +7,15 @@ use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
 use crate::{
-    build_tasks::{build_files, update_template_files},
+    build_tasks::{build_files, full_build, update_template_files},
     config::Configuration,
-    error::report_error,
+    error::{report_error, report_if_fail},
 };
+
+#[derive(Debug)]
+pub struct WatchParam {
+    pub build_first: bool,
+}
 
 #[derive(thiserror::Error, Debug)]
 pub enum WatcherError {
@@ -24,7 +29,13 @@ pub enum Changed {
     Template,
 }
 
-pub fn watch_for_change(config: &Configuration) -> Result<(), WatcherError> {
+pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<(), WatcherError> {
+    if param.build_first {
+        log!(ok: "--build-first specified - full building first!");
+        report_if_fail(|| full_build(config)).ok();
+        log!(ok: "Full building completed, now starting watch...");
+    }
+
     let (md_tx, md_rx) = unbounded();
     let (tpl_tx, tpl_rx) = unbounded();
     let (ctrlc_tx, ctrlc_rx) = unbounded::<()>();
