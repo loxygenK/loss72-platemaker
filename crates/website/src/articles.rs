@@ -52,12 +52,13 @@ pub fn generate_article_html<'article>(
     let placeholder = Placeholder::from_strs("${", "}", None)
         .expect("Regex is validated to include the capture group");
 
-    let placeholder_contents = HashMap::from([
+    let mut placeholder_contents = HashMap::from([
         ("title", article.metadata.title.clone()),
-        ("date", article.metadata.date.clone()),
         ("slug", article.slug.clone()),
         ("content", article.content.clone()),
     ]);
+
+    placeholder_contents.extend(article.metadata.widgets.render_to_placeholder_content());
 
     Ok(ArticlePage {
         article,

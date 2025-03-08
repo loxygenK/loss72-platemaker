@@ -1,5 +1,6 @@
 use std::any::type_name;
 
+use loss72_platemaker_widgets::Widgets;
 use serde::Deserialize;
 
 use crate::util::get_slice_by_char;
@@ -35,5 +36,6 @@ impl std::fmt::Debug for Article {
 #[derive(Clone, Deserialize, Debug)]
 pub struct ArticleMetadata {
     pub title: String,
-    pub date: String,
+    #[serde(default)]
+    pub widgets: Widgets,
 }

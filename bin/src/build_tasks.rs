@@ -8,7 +8,7 @@ use loss72_platemaker_website::{
     WebsiteGenerationError, generate_article_html, get_webpage_construction, load_templates,
 };
 
-use crate::config::Configuration;
+use crate::{config::Configuration, error::report_error};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TaskError {
@@ -54,20 +54,15 @@ pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<
     log!(section: "Loading HTML from {}", config.html_template_dir.path().display());
     let html_templates = load_templates(&config.html_template_dir)?;
 
-    let maybe_articles = files
-        .map(|file| parse_markdown(&file))
-        .collect::<Result<Vec<_>, _>>();
+    let articles = files
+        .filter_map(|file| {
+            parse_markdown(&file)
+                .inspect_err(report_error)
+                .ok()
+        })
+        .collect::<Vec<_>>();
 
-    let articles = match maybe_articles {
-        Ok(articles) => {
-            log!(ok: "Built all {} articles", articles.len());
-            articles
-        }
-        Err(error) => {
-            return Err(error.into());
-        }
-    };
-
+    log!(ok: "Built {} articles", articles.len());
     log!(section: "Generating HTML contents for articles");
 
     let htmls = articles
