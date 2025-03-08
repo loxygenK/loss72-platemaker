@@ -3,11 +3,12 @@ use std::{path::PathBuf, time::Duration};
 use crossbeam_channel::{RecvError, select, unbounded};
 
 use loss72_platemaker_core::{fs::File, log};
+use loss72_platemaker_structure::{ArticleFile, AssetFile};
 use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
 use crate::{
-    build_tasks::{build_files, full_build, update_template_files},
+    build_tasks::{build_files, copy_individual_assets_files, copy_individual_template_files, full_build},
     config::Configuration,
     error::{report_error, report_if_fail},
 };
@@ -67,7 +68,19 @@ pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<()
                     continue;
                 };
 
-                build_files(config, files.into_iter())
+                let articles = files.iter()
+                    .filter_map(|file| ArticleFile::from_file(file, &config.article_md_dir))
+                    .collect::<Vec<_>>();
+
+                build_files(config, &articles)
+                    .inspect_err(report_error)
+                    .ok();
+
+                let article_asset_file = files.iter()
+                    .filter_map(|file| AssetFile::from_file(file, &config.article_md_dir))
+                    .collect::<Vec<_>>();
+
+                copy_individual_assets_files(config, &article_asset_file)
                     .inspect_err(report_error)
                     .ok();
             },
@@ -76,7 +89,7 @@ pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<()
                     continue;
                 };
 
-                update_template_files(config, &files)
+                copy_individual_template_files(config, &files)
                     .inspect_err(report_error)
                     .ok();
             },

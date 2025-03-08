@@ -309,6 +309,7 @@ dependencies = [
  "loss72-platemaker-construct",
  "loss72-platemaker-core",
  "loss72-platemaker-markdown",
+ "loss72-platemaker-structure",
  "loss72-platemaker-website",
  "notify",
  "notify-debouncer-full",
@@ -338,11 +339,19 @@ version = "0.1.0"
 dependencies = [
  "emojis",
  "loss72-platemaker-core",
+ "loss72-platemaker-structure",
  "loss72-platemaker-template",
  "markdown",
  "regex",
  "thiserror",
  "toml",
+]
+
+[[package]]
+name = "loss72-platemaker-structure"
+version = "0.1.0"
+dependencies = [
+ "loss72-platemaker-core",
 ]
 
 [[package]]

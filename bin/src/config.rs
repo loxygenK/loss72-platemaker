@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use loss72_platemaker_core::fs::{Directory, FileSystemError};
+use loss72_platemaker_core::fs::Directory;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct ConfigurationScheme {
@@ -17,7 +17,7 @@ pub struct Configuration {
 }
 
 impl TryFrom<ConfigurationScheme> for Configuration {
-    type Error = FileSystemError;
+    type Error = std::io::Error;
 
     fn try_from(value: ConfigurationScheme) -> Result<Self, Self::Error> {
         Ok(Configuration {

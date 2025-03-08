@@ -17,3 +17,4 @@ loss72-platemaker-website = { version = "0.1.0", path = "../crates/website" }
 serde = { version = "1.0.217", features = ["derive"] }
 thiserror = "2.0.11"
 toml = "0.8.19"
+loss72-platemaker-structure = { version = "0.1.0", path = "../crates/structure" }

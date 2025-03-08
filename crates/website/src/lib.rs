@@ -4,7 +4,7 @@ use std::path::Path;
 
 use articles::ArticlePage;
 use loss72_platemaker_construct::{ConstructFile, Construction};
-use loss72_platemaker_core::fs::{Directory, FileSystemError};
+use loss72_platemaker_core::fs::Directory;
 
 mod articles;
 
@@ -12,9 +12,6 @@ pub use articles::generate_article_html;
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebsiteGenerationError {
-    #[error("Path was not valid: {0}")]
-    PathError(#[from] FileSystemError),
-
     #[error("These placeholder is invalid: {}", .0.join(", "))]
     InvalidPlaceholder(Vec<String>),
 

@@ -1,7 +1,6 @@
-use std::path::{Component, Path};
-
 use super::{emoji::replace_emoji_from_shortcode, frontmatter::parse_toml_to_metadata};
 use loss72_platemaker_core::model::Article;
+use loss72_platemaker_structure::ArticleFile;
 use markdown::{Options, mdast};
 
 pub type ParseResult<T> = Result<T, ParseError>;
@@ -25,8 +24,8 @@ pub enum ParseError {
     InvalidToml(String),
 }
 
-pub fn make_article_from_markdown(root: &Path, path: &Path, content: &str) -> ParseResult<Article> {
-    let (group, slug) = path_into_group_and_slug(root, path)?;
+pub fn make_article_from_markdown(file: &ArticleFile, content: &str) -> ParseResult<Article> {
+    let (group, slug) = path_into_group_and_slug(file)?;
     let content = parse_markdown(content)?;
     let metadata = parse_toml_to_metadata(&content.frontmatter)?;
 
@@ -40,37 +39,15 @@ pub fn make_article_from_markdown(root: &Path, path: &Path, content: &str) -> Pa
     })
 }
 
-pub fn path_into_group_and_slug(root: &Path, path: &Path) -> ParseResult<(String, String)> {
-    assert!(path.starts_with(root),);
-
-    let relative_path = path.strip_prefix(root).unwrap_or_else(|_| {
-        panic!(
-            "Path is not sub of root\n  Root = {}\n  Path = {}",
-            root.to_string_lossy(),
-            path.to_string_lossy()
-        )
-    });
-
-    let components = relative_path
-        .components()
-        .skip_while(|component| !matches!(component, Component::Normal(_)))
-        .map(|component| {
-            component
-                .as_os_str()
-                .to_str()
-                .ok_or(ParseError::InvalidPath)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let &[year, month, day_and_slug] = components.as_slice() else {
-        println!("{:#?}", components.as_slice());
+pub fn path_into_group_and_slug(file: &ArticleFile) -> ParseResult<(String, String)> {
+    let [day_and_slug] = file.suffix_components.as_slice() else {
         return Err(ParseError::InvalidStructure);
     };
 
-    let day_and_slug = day_and_slug.strip_suffix(".md").unwrap_or(day_and_slug);
+    let day_and_slug = day_and_slug.strip_suffix(".md").unwrap_or(&day_and_slug);
 
     Ok((
-        format!("{:0>4}{:0>2}", year, month),
+        format!("{:0>4}{:0>2}", file.group.year, file.group.month),
         day_and_slug.to_string(),
     ))
 }

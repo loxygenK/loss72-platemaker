@@ -11,3 +11,4 @@ thiserror = "2.0.11"
 loss72-platemaker-template = { version = "0.1.0", path = "../template" }
 regex = "1.11.1"
 toml = "0.8.19"
+loss72-platemaker-structure = { version = "0.1.0", path = "../structure" }

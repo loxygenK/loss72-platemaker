@@ -3,26 +3,19 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use super::{FSNode, File, FileSystemError, FileSystemResult};
+use super::{FSNode, File};
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Directory(PathBuf);
 
 impl Directory {
-    pub fn new(path: impl AsRef<Path>) -> FileSystemResult<Self> {
+    pub fn new(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let path = path.as_ref();
-
-        if !path.exists() {
-            return Err(FileSystemError::DoesNotExist(path.to_path_buf()));
-        }
 
         let path = path.canonicalize()?;
 
         if !path.is_dir() {
-            return Err(FileSystemError::EntryTypeMismatch(
-                path.to_path_buf(),
-                "file",
-            ));
+            return Err(std::io::ErrorKind::NotADirectory.into());
         }
 
         Ok(Directory(path.to_path_buf()))
@@ -30,14 +23,13 @@ impl Directory {
 
     pub fn new_with_mkdir(
         path: impl AsRef<Path>,
-    ) -> Result<FileSystemResult<Self>, std::io::Error> {
-        let path = path.as_ref().canonicalize()?;
-
+    ) -> std::io::Result<Self> {
+        let path = path.as_ref();
         if !path.exists() {
-            std::fs::create_dir(&path)?;
+            std::fs::create_dir_all(&path)?;
         }
 
-        Ok(Directory::new(path))
+        Directory::new(path)
     }
 
     pub fn new_unchecked(path: impl AsRef<Path>) -> Self {
@@ -48,21 +40,33 @@ impl Directory {
         &self.0
     }
 
+    pub fn get_child(
+        &self,
+        path: impl AsRef<Path>,
+    ) -> Option<std::io::Result<Directory>> {
+        let child_path = self.path().join(path);
+        if child_path.exists() {
+            Some(Directory::new(child_path))
+        } else {
+            None
+        }
+    }
+
     pub fn get_or_mkdir_child(
         &self,
         path: impl AsRef<Path>,
-    ) -> Result<Result<Directory, FileSystemError>, std::io::Error> {
+    ) -> std::io::Result<Directory> {
         Directory::new_with_mkdir(self.path().join(path))
     }
 
-    pub fn get_file(&self, path: impl AsRef<Path>) -> FileSystemResult<File> {
+    pub fn get_file(&self, path: impl AsRef<Path>) -> std::io::Result<File> {
         File::new(self.path().join(path))
     }
 
     pub fn get_files<const N: usize>(
         &self,
         paths: &[&impl AsRef<Path>; N],
-    ) -> FileSystemResult<[File; N]> {
+    ) -> std::io::Result<[File; N]> {
         Ok(paths
             .iter()
             .map(|path| self.get_file(path))
@@ -71,16 +75,16 @@ impl Directory {
             .expect("paths to be initialized in N-sized array as type parameter notes"))
     }
 
-    pub fn get_files_vec(&self, files: &[&impl AsRef<Path>]) -> FileSystemResult<Vec<File>> {
+    pub fn get_files_vec(&self, files: &[&impl AsRef<Path>]) -> std::io::Result<Vec<File>> {
         files
             .iter()
             .map(|path| File::new(path.as_ref()))
             .collect::<Result<_, _>>()
     }
 
-    pub fn iter_content(
+    pub fn try_iter_content(
         &self,
-    ) -> Result<impl Iterator<Item = Result<FSNode, FileSystemError>>, std::io::Error> {
+    ) -> Result<impl Iterator<Item = std::io::Result<FSNode>>, std::io::Error> {
         Ok(self.path().read_dir()?.flat_map(|entry| {
             entry.map(|entry| {
                 let path = entry.path();
@@ -116,7 +120,7 @@ impl RecursiveIterator {
 }
 
 impl Iterator for RecursiveIterator {
-    type Item = Result<File, std::io::Error>;
+    type Item = Result<FSNode, std::io::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(child_next) = self.child.as_mut().and_then(|child| child.next()) {
@@ -131,24 +135,33 @@ impl Iterator for RecursiveIterator {
 
             let path = file.path();
             if path.is_dir() {
-                let mut child = match RecursiveIterator::new(&path) {
+                self.child = Some(Box::new(match RecursiveIterator::new(&path) {
                     Ok(iter) => iter,
                     Err(err) => return Some(Err(err)),
-                };
+                }));
 
-                let next = child.next();
-
-                self.child = Some(Box::new(child));
-                return next;
+                // Safety: Entry should be exist at this point, and
+                //         its type is also checked in this if block
+                let file = Directory::new(&path).expect("entry to be exist and file");
+                return Some(Ok(FSNode::Directory(file)));
             }
 
             if path.is_file() {
                 // Safety: Entry should be exist at this point, and
                 //         its type is also checked in this if block
-                return Some(Ok(File::new(&path).expect("entry to be exist and file")));
+                let file = File::new(&path).expect("entry to be exist and file");
+                return Some(Ok(FSNode::File(file)));
             }
+
+            return Some(Ok(FSNode::Unknown(path.to_path_buf())));
         }
 
         None
+    }
+}
+
+impl From<Directory> for FSNode {
+    fn from(dir: Directory) -> Self {
+        FSNode::Directory(dir)
     }
 }

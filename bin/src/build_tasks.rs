@@ -1,6 +1,9 @@
-use loss72_platemaker_construct::{copy_dir_recursively, copy_files};
-use loss72_platemaker_core::{fs::File, log};
+use std::path::Path;
+
+use loss72_platemaker_construct::{copy_dir_recursively, copy_files, copy_individual_file};
+use loss72_platemaker_core::{fs::{Directory, File}, log};
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
+use loss72_platemaker_structure::{ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
 use loss72_platemaker_website::{
     WebsiteGenerationError, generate_article_html, get_webpage_construction, load_templates,
 };
@@ -24,15 +27,15 @@ pub type TaskResult<T> = Result<T, TaskError>;
 pub fn full_build(config: &Configuration) -> TaskResult<()> {
     log!(job_start: "Building all articles in {}", config.article_md_dir.path().display());
 
-    let files = config.article_md_dir.try_iter_tree()?.filter_map(|file| {
-        if let Err(error) = &file {
-            log!(warn: "There was an error during traversing direcotry: {}", error);
-        }
+    println!("{:#?}", config.article_md_dir);
+    let content_dir = ContentDirectory::new(&config.article_md_dir)?;
 
-        file.ok()
-    });
+    log!(ok: "Discovered {} articles", content_dir.markdown_files.len());
 
-    let result = build_files(config, files).and_then(|_| copy_template_files(config));
+    let result = Ok(())
+        .and_then(|_| build_files(config, &content_dir.markdown_files))
+        .and_then(|_| copy_template_files(config))
+        .and_then(|_| copy_asset_files(config, &content_dir.article_group));
 
     if result.is_ok() {
         log!(job_end: "Successfully built all articles in {}", config.article_md_dir.path().display())
@@ -41,8 +44,8 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
     result
 }
 
-pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) -> TaskResult<()> {
-    let mut files = files.peekable();
+pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<()> {
+    let mut files = files.iter().peekable();
 
     if files.peek().is_none() {
         return Ok(());
@@ -52,8 +55,7 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
     let html_templates = load_templates(&config.html_template_dir)?;
 
     let maybe_articles = files
-        .filter(|file| file.path().extension().is_some_and(|ext| ext == "md"))
-        .map(|file| parse_markdown(&config.article_md_dir, file))
+        .map(|file| parse_markdown(&file))
         .collect::<Result<Vec<_>, _>>();
 
     let articles = match maybe_articles {
@@ -94,7 +96,59 @@ pub fn build_files(config: &Configuration, files: impl Iterator<Item = File>) ->
     Ok(())
 }
 
-pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResult<()> {
+pub fn copy_template_files(config: &Configuration) -> TaskResult<()> {
+    log!(section: "Copying files in template directory");
+
+    copy_dir_recursively(
+        &config.html_template_dir,
+        &config.destination,
+        &["_article.html".into()],
+    )?;
+
+    Ok(())
+}
+
+pub fn copy_asset_files(config: &Configuration, article_group: &[ArticleGroup]) -> TaskResult<()> {
+    log!(section: "Copying asset files in article directory");
+
+    let directories = article_group
+        .iter()
+        .flat_map(|group| {
+            let dir = Directory::new(config.article_md_dir
+                .path()
+                .join(group.group_dir_path())
+            );
+            let dir = match dir {
+                Ok(dir) => dir,
+                Err(e) => return Some(Err(e)),
+            };
+
+            dir.get_child("assets").map(|dir| dir.map(|dir| (dir, group)))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    for (dir, group) in &directories {
+        copy_dir_recursively(
+            dir,
+            &config.destination.get_or_mkdir_child(
+                Path::new(".")
+                    .join("articles")
+                    .join(group.group_dir_flat_path())
+                    .join("assets")
+            )?,
+            &[],
+        )?;
+    }
+
+    Ok(())
+}
+
+// TODO: Implement article asset copying feature to...
+//         - full build. For each group, check if `assets` directory exists,
+//           and copy files recursively if exists.
+//         - watch. Just copy individual file using `copy_files`
+
+pub fn copy_individual_template_files(config: &Configuration, files: &[File]) -> TaskResult<()> {
     if files.is_empty() {
         return Ok(());
     }
@@ -118,14 +172,28 @@ pub fn update_template_files(config: &Configuration, files: &[File]) -> TaskResu
     Ok(())
 }
 
-pub fn copy_template_files(config: &Configuration) -> TaskResult<()> {
-    log!(section: "Copying files in template directory");
+pub fn copy_individual_assets_files(config: &Configuration, files: &[AssetFile]) -> TaskResult<()> {
+    if files.is_empty() {
+        return Ok(());
+    }
 
-    copy_dir_recursively(
-        &config.html_template_dir,
-        &config.destination,
-        &["_article.html".into()],
-    )?;
+    log!(job_start: "Updating asset files");
+
+    for file in files {
+        let file_root = config.article_md_dir
+            .get_child(file.group.group_dir_path().join("assets"))
+            .unwrap()?;
+        let dest_dir = &config.destination.get_or_mkdir_child(
+            Path::new(".")
+                .join("articles")
+                .join(file.group.group_dir_flat_path())
+                .join("assets")
+        )?;
+
+        copy_individual_file(&file_root, &dest_dir, file.file())?;
+    }
+
+    log!(job_end: "Updated asset files");
 
     Ok(())
 }
