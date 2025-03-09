@@ -1,7 +1,9 @@
+mod full_service;
+
 use super::{emoji::replace_emoji_from_shortcode, frontmatter::parse_toml_to_metadata};
+use full_service::MarkdownParseResult;
 use loss72_platemaker_core::model::Article;
 use loss72_platemaker_structure::ArticleFile;
-use markdown::{Options, mdast};
 
 pub type ParseResult<T> = Result<T, ParseError>;
 
@@ -59,36 +61,10 @@ struct ParsedContent {
 }
 
 fn parse_markdown(content: &str) -> ParseResult<ParsedContent> {
-    let options: Options = {
-        let mut gfm_default = Options::gfm();
-        gfm_default.parse.constructs.frontmatter = true;
-        gfm_default.compile.allow_dangerous_html = true;
-        gfm_default.compile.allow_dangerous_protocol = true;
+    let parsed = MarkdownParseResult::parse_content(content);
 
-        gfm_default
-    };
-
-    // Safety: Markdown is always parsable (but MDX is not - we are only parsing Markdown),
-    //         so the Result is practically infallible here
-    let html =
-        markdown::to_html_with_options(content, &options).expect("Markdown to be always parsable");
-    let node = markdown::to_mdast(content, &options.parse).expect("Markdown to be always parsable");
-
-    let mdast::Node::Root(root) = node else {
-        panic!("Expected the topmost node is Root (developer oversight)");
-    };
-    let frontmatter = root
-        .children
-        .into_iter()
-        .find_map(|node| {
-            if let mdast::Node::Toml(toml) = node {
-                Some(toml)
-            } else {
-                None
-            }
-        })
-        .ok_or(ParseError::NoFrontmatter)?
-        .value;
-
-    Ok(ParsedContent { html, frontmatter })
+    Ok(ParsedContent {
+        html: parsed.html().to_string(),
+        frontmatter: parsed.frontmatter().ok_or(ParseError::NoFrontmatter)?.to_string(),
+    })
 }

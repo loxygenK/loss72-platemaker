@@ -67,7 +67,7 @@ impl ArticleGroup {
     }
 
     pub fn group_dir_flat_path(&self) -> PathBuf {
-        PathBuf::new().join(format!("{:0>4}{}", self.year, self.month))
+        PathBuf::new().join(format!("{:0>4}{:0>2}", self.year, self.month))
     }
 
     fn from_path(value: &Path) -> Option<(Self, Vec<String>)> {

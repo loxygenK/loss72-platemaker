@@ -12,3 +12,5 @@ loss72-platemaker-template = { version = "0.1.0", path = "../template" }
 regex = "1.11.1"
 toml = "0.8.19"
 loss72-platemaker-structure = { version = "0.1.0", path = "../structure" }
+syntect = "5.2.0"
+pulldown-cmark = { version = "0.13.0", features = ["serde"] }
