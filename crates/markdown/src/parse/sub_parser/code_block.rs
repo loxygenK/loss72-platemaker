@@ -40,7 +40,7 @@ impl<'p> SubParser<'p> for CodeBlockSubParser {
             (Some(state), Event::Text(text)) => {
                 let html = self
                     .highlighter
-                    .generate_highlighted_html(&state.lang, &text.to_string());
+                    .generate_highlighted_html(&state.lang, text.as_ref());
                 state.has_content = true;
 
                 use_html(&html)
@@ -61,9 +61,7 @@ impl<'p> SubParser<'p> for CodeBlockSubParser {
         }
     }
 
-    fn compose_output(self) -> Self::Output {
-        ()
-    }
+    fn compose_output(self) -> Self::Output {}
 }
 
 struct SyntaxHighlighter {
@@ -87,12 +85,12 @@ impl SyntaxHighlighter {
     }
 
     fn find_language(&self, lang: &str) -> &SyntaxReference {
-        if lang == "" {
+        if lang.is_empty() {
             self.syntax_set.find_syntax_plain_text()
         } else {
             self.syntax_set
-                .find_syntax_by_name(&lang)
-                .or_else(|| self.syntax_set.find_syntax_by_extension(&lang))
+                .find_syntax_by_name(lang)
+                .or_else(|| self.syntax_set.find_syntax_by_extension(lang))
                 .unwrap_or_else(|| {
                     log!(warn: "Unknown syntax highlight language: {}", lang);
                     self.syntax_set.find_syntax_plain_text()

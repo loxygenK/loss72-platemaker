@@ -16,7 +16,7 @@ impl MarkdownParseResult {
     }
 
     pub fn frontmatter(&self) -> Option<&str> {
-        self.frontmatter.as_ref().map(|ft| ft.as_str())
+        self.frontmatter.as_deref()
     }
 }
 
@@ -94,7 +94,7 @@ struct MarkdownParserIter<'p> {
     last_append: VecDeque<Event<'p>>,
 }
 
-impl<'p> MarkdownParserIter<'p> {
+impl MarkdownParserIter<'_> {
     pub fn finalization(&mut self) {
         self.last_append = self.sub_parser.finalize().into();
     }

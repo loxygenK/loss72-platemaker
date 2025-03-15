@@ -35,7 +35,7 @@ impl SubParser<'_> for FrontmatterSubParser {
             (false, _) => use_next(),
             (true, Event::Text(text)) => {
                 if let Some(body) = self.body.as_mut() {
-                    body.push_str(&text.to_string());
+                    body.push_str(text.as_ref());
                 } else {
                     self.body = Some(text.to_string());
                 }

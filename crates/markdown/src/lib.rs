@@ -4,7 +4,6 @@ use loss72_platemaker_core::{fs::File, log, model::Article};
 use loss72_platemaker_structure::ArticleFile;
 use parse::{ParseError, make_article_from_markdown};
 
-mod emoji;
 mod frontmatter;
 mod parse;
 

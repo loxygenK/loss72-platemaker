@@ -58,7 +58,7 @@ pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<
     let html_templates = load_templates(&config.html_template_dir)?;
 
     let articles = files
-        .filter_map(|file| parse_markdown(&file).inspect_err(report_error).ok())
+        .filter_map(|file| parse_markdown(file).inspect_err(report_error).ok())
         .collect::<Vec<_>>();
 
     log!(ok: "Built {} articles", articles.len());
@@ -175,7 +175,7 @@ pub fn copy_individual_assets_files(config: &Configuration, files: &[AssetFile])
         let file_root = config
             .article_md_dir
             .get_child(file.group.group_dir_path().join("assets"))
-            .unwrap()?;
+            .expect("assets directory to be exist")?;
         let dest_dir = &config.destination.get_or_mkdir_child(
             Path::new(".")
                 .join("articles")
@@ -183,7 +183,7 @@ pub fn copy_individual_assets_files(config: &Configuration, files: &[AssetFile])
                 .join("assets"),
         )?;
 
-        copy_individual_file(&file_root, &dest_dir, file.file())?;
+        copy_individual_file(&file_root, dest_dir, file.file())?;
     }
 
     log!(job_end: "Updated asset files");

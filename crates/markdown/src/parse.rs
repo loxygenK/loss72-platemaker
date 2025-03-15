@@ -45,7 +45,7 @@ pub fn path_into_group_and_slug(file: &ArticleFile) -> ParseResult<(String, Stri
         return Err(ParseError::InvalidStructure);
     };
 
-    let day_and_slug = day_and_slug.strip_suffix(".md").unwrap_or(&day_and_slug);
+    let day_and_slug = day_and_slug.strip_suffix(".md").unwrap_or(day_and_slug);
 
     Ok((
         format!("{:0>4}{:0>2}", file.group.year, file.group.month),

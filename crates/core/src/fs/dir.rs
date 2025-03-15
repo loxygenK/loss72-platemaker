@@ -24,7 +24,7 @@ impl Directory {
     pub fn new_with_mkdir(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let path = path.as_ref();
         if !path.exists() {
-            std::fs::create_dir_all(&path)?;
+            std::fs::create_dir_all(path)?;
         }
 
         Directory::new(path)
@@ -119,36 +119,27 @@ impl Iterator for RecursiveIterator {
             return Some(child_next);
         }
 
-        for file in &mut self.current {
-            let file = match file {
-                Ok(file) => file,
+        let node = match self.current.next()? {
+            Ok(node) => node,
+            Err(err) => return Some(Err(err)),
+        };
+
+        let path = node.path();
+
+        if path.is_file() {
+            let file = File::new(&path).expect("entry to be exist and file");
+            Some(Ok(FSNode::File(file)))
+        } else if path.is_dir() {
+            self.child = Some(Box::new(match RecursiveIterator::new(&path) {
+                Ok(iter) => iter,
                 Err(err) => return Some(Err(err)),
-            };
+            }));
 
-            let path = file.path();
-            if path.is_dir() {
-                self.child = Some(Box::new(match RecursiveIterator::new(&path) {
-                    Ok(iter) => iter,
-                    Err(err) => return Some(Err(err)),
-                }));
-
-                // Safety: Entry should be exist at this point, and
-                //         its type is also checked in this if block
-                let file = Directory::new(&path).expect("entry to be exist and file");
-                return Some(Ok(FSNode::Directory(file)));
-            }
-
-            if path.is_file() {
-                // Safety: Entry should be exist at this point, and
-                //         its type is also checked in this if block
-                let file = File::new(&path).expect("entry to be exist and file");
-                return Some(Ok(FSNode::File(file)));
-            }
-
-            return Some(Ok(FSNode::Unknown(path.to_path_buf())));
+            let dir = Directory::new(&path).expect("entry to be exist and file");
+            Some(Ok(FSNode::Directory(dir)))
+        } else {
+            Some(Ok(FSNode::Unknown(path.to_path_buf())))
         }
-
-        None
     }
 }
 

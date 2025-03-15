@@ -58,7 +58,7 @@ impl Ord for FootnoteSort<'_, '_> {
     }
 }
 
-impl<'p> FootnoteSubParser<'p> {
+impl FootnoteSubParser<'_> {
     pub fn add_footnote_reference(&mut self, id: &str) -> String {
         let index = self
             .footnote_refs
@@ -162,9 +162,7 @@ impl<'p> SubParser<'p> for FootnoteSubParser<'p> {
         Some(events)
     }
 
-    fn compose_output(self) -> Self::Output {
-        ()
-    }
+    fn compose_output(self) -> Self::Output {}
 }
 
 impl<'p> FootnoteSubParser<'p> {

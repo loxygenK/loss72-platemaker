@@ -1,4 +1,4 @@
-use std::{mem::replace, ops::ControlFlow};
+use std::ops::ControlFlow;
 
 use pulldown_cmark::Event;
 
@@ -29,8 +29,6 @@ pub struct SubParsers<'p> {
 
 impl<'p> SubParsers<'p> {
     pub fn receive_event(&mut self, event: &Event<'p>) -> EventProcessControl<'p> {
-        println!("---");
-
         let mut next = Next::default();
         next.update_by(self.code_block.receive_event(next.next_event(event))?);
         next.update_by(self.footnote.receive_event(next.next_event(event))?);
@@ -61,10 +59,6 @@ impl<'p> Next<'p> {
             panic!("Multiple sub parser requested to ignore");
         }
 
-        if other.replacement.is_some() {
-            println!("UPD: {:#?} -> {:#?}", self.replacement, other.replacement);
-        }
-
         *self = Self {
             ignore: other.ignore,
             replacement: other.replacement.or(self.replacement.take()),
@@ -72,10 +66,7 @@ impl<'p> Next<'p> {
     }
 
     fn next_event<'r, 'o: 'r>(&'r self, original: &'o Event<'p>) -> &'r Event<'p> {
-        let replacement = self.replacement.as_ref().unwrap_or(original);
-        println!("EVT: {:?}", replacement);
-
-        replacement
+        self.replacement.as_ref().unwrap_or(original)
     }
 }
 
@@ -90,7 +81,7 @@ pub fn discard<'p>() -> EventProcessControl<'p> {
     ControlFlow::Break(BreakingEventProcess::Discard)
 }
 
-pub fn use_this_instead<'p>(replacement: Vec<Event<'p>>) -> EventProcessControl<'p> {
+pub fn use_this_instead(replacement: Vec<Event>) -> EventProcessControl {
     ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement))
 }
 
@@ -102,6 +93,6 @@ pub fn use_next<'p>() -> EventProcessControl<'p> {
     ControlFlow::Continue(Next::default())
 }
 
-pub fn use_next_with<'p>(next: Next<'p>) -> EventProcessControl<'p> {
+pub fn use_next_with(next: Next) -> EventProcessControl {
     ControlFlow::Continue(next)
 }

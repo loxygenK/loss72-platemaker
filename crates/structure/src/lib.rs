@@ -13,18 +13,15 @@ pub struct ContentDirectory<'dir> {
 
 impl<'dir> ContentDirectory<'dir> {
     pub fn new(dir: &'dir Directory) -> Result<Self, std::io::Error> {
-        let mut article_group = ArticleGroup::scan(&dir)?;
+        let mut article_group = ArticleGroup::scan(dir)?;
         article_group.sort();
         article_group.dedup();
 
         let markdown_files = article_group
             .iter()
             .map(|group| {
-                Directory::new(dir.path().join(group.group_dir_path())).and_then(|dir| {
-                    dir.try_iter_content()?
-                        .into_iter()
-                        .collect::<Result<Vec<_>, _>>()
-                })
+                Directory::new(dir.path().join(group.group_dir_path()))
+                    .and_then(|dir| dir.try_iter_content()?.collect::<Result<Vec<_>, _>>())
             })
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
@@ -51,12 +48,11 @@ impl ArticleGroup {
     pub fn scan(root: &Directory) -> std::io::Result<Vec<ArticleGroup>> {
         Ok(root
             .try_iter_tree()?
-            .into_iter()
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()
             .filter_map(|node| node.into_directory())
             .filter_map(|dir| Self::from_path(dir.path().strip_prefix(root.path()).unwrap()))
-            .filter(|(_, suffix)| suffix.len() == 0)
+            .filter(|(_, suffix)| suffix.is_empty())
             .map(|(group, _)| group)
             .collect::<Vec<_>>())
     }
@@ -118,12 +114,8 @@ impl ArticleFile {
     pub fn from_file(file: &File, root: &Directory) -> Option<Self> {
         let file = ArticleGroupNode::from_node(file.clone().into(), root)?;
 
-        if file.suffix_components.len() == 1
-            && file
-                .relative_path
-                .extension()
-                .is_some_and(|ext| ext == "md")
-        {
+        // matches to files in /path/to/root/*.md
+        if matches!(file.suffix_components.as_slice(), [first] if first.ends_with(".md")) {
             Some(Self(file))
         } else {
             None
@@ -152,12 +144,8 @@ impl AssetFile {
     pub fn from_file(file: &File, root: &Directory) -> Option<Self> {
         let file = ArticleGroupNode::from_node(file.clone().into(), root)?;
 
-        if file.suffix_components.len() > 2
-            && file
-                .suffix_components
-                .get(0)
-                .is_some_and(|folder| folder == "assets")
-        {
+        // matches to files in /path/to/root/assets/(something)/
+        if matches!(file.suffix_components.as_slice(), [first, _, ..] if first == "assets") {
             Some(Self(file))
         } else {
             None
@@ -189,7 +177,7 @@ impl AssetRootDir {
         if dir.suffix_components.len() == 1
             && dir
                 .suffix_components
-                .get(0)
+                .first()
                 .is_some_and(|folder| folder == "assets")
         {
             Some(Self(dir))

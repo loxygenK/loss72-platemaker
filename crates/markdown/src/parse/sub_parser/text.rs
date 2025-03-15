@@ -24,16 +24,14 @@ impl<'p> SubParser<'p> for TextParser {
         if let Event::Text(text) = event {
             use_next_with(Next {
                 ignore: Some(Ignore::ForNextIf(1, Self::ignore_if_softbreak)),
-                replacement: Some(Event::Html(self.emoji.replace(&text.to_string()).into())),
+                replacement: Some(Event::Html(self.emoji.replace(text.as_ref()).into())),
             })
         } else {
             use_next()
         }
     }
 
-    fn compose_output(self) -> Self::Output {
-        ()
-    }
+    fn compose_output(self) -> Self::Output {}
 }
 
 impl TextParser {
