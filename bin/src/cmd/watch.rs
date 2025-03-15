@@ -74,7 +74,7 @@ pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<()
                     .filter_map(|file| ArticleFile::from_file(file, &config.article_md_dir))
                     .collect::<Vec<_>>();
 
-                build_files(config, &articles)
+                build_files(config, &articles, false)
                     .inspect_err(report_error)
                     .ok();
 

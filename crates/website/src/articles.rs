@@ -9,6 +9,21 @@ use std::{
 
 use crate::{OutputResult, WebPageHtmlTemplates, WebsiteGenerationError};
 
+pub struct IndexPage {
+    pub html: String,
+    pub path: PathBuf,
+}
+
+
+impl<'p> From<&'p IndexPage> for ConstructFile<'p> {
+    fn from(value: &'p IndexPage) -> Self {
+        ConstructFile {
+            path: &value.path,
+            content: &value.html,
+        }
+    }
+}
+
 pub struct ArticlePage<'article> {
     pub article: &'article Article,
     pub html: String,
@@ -41,6 +56,42 @@ impl std::fmt::Debug for ArticlePage<'_> {
             .field("path", &self.path)
             .finish()
     }
+}
+
+pub fn generate_index_html(
+    html_templates: &WebPageHtmlTemplates,
+    article: &[ArticlePage],
+) -> OutputResult<IndexPage> {
+    log!(step: "Generating HTML for index page");
+
+    let placeholder = Placeholder::from_strs("${", "}", None)
+        .expect("Regex is validated to include the capture group");
+
+    // We create list elements first
+    let article_tag_iter = article.iter()
+        .map(|page| {
+            let placeholder_contents = HashMap::from([
+                ("url", page.path.to_string_lossy().to_string()),
+                ("title", page.article.metadata.title.clone()),
+            ]);
+            placeholder
+                .partially_fill_placeholders(&html_templates.index_list, |name| {
+                    placeholder_contents.get(name).cloned()
+                })
+                .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))
+        })
+        .collect::<Result<String, _>>()?;
+
+    let placeholder_contents = HashMap::from([("articles", article_tag_iter)]);
+
+    Ok(IndexPage {
+        path: PathBuf::from("index.html"),
+        html: placeholder
+            .partially_fill_placeholders(&html_templates.index, |name| {
+                placeholder_contents.get(name).cloned()
+            })
+            .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?
+    })
 }
 
 pub fn generate_article_html<'article>(

@@ -8,7 +8,7 @@ use loss72_platemaker_core::{
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
 use loss72_platemaker_structure::{ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
 use loss72_platemaker_website::{
-    WebsiteGenerationError, generate_article_html, get_webpage_construction, load_templates,
+    WebsiteGenerationError, generate_article_html, generate_index_html, get_webpage_construction, load_templates,
 };
 
 use crate::{config::Configuration, error::report_error};
@@ -35,7 +35,7 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
     log!(ok: "Discovered {} articles", content_dir.markdown_files.len());
 
     let result = Ok(())
-        .and_then(|_| build_files(config, &content_dir.markdown_files))
+        .and_then(|_| build_files(config, &content_dir.markdown_files, true))
         .and_then(|_| copy_template_files(config))
         .and_then(|_| copy_asset_files(config, &content_dir.article_group));
 
@@ -46,7 +46,7 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
     result
 }
 
-pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<()> {
+pub fn build_files(config: &Configuration, files: &[ArticleFile], full_build: bool) -> TaskResult<()> {
     let mut files = files.iter().peekable();
 
     if files.peek().is_none() {
@@ -78,9 +78,15 @@ pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<
         }
     };
 
+    let index_page = if full_build {
+        Some(generate_index_html(&html_templates, htmls.as_slice())?)
+    } else {
+        None
+    };
+
     log!(section: "Writing pages to the file system");
 
-    let construction = get_webpage_construction(htmls.as_slice());
+    let construction = get_webpage_construction(index_page.as_ref(), htmls.as_slice());
     let plan = construction.plan(config.destination.path());
     plan.execute()?;
 

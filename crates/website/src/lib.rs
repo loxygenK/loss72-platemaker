@@ -2,13 +2,13 @@
 
 use std::path::Path;
 
-use articles::ArticlePage;
+use articles::{IndexPage, ArticlePage};
 use loss72_platemaker_construct::{ConstructFile, Construction};
 use loss72_platemaker_core::fs::Directory;
 
 mod articles;
 
-pub use articles::generate_article_html;
+pub use articles::{generate_article_html, generate_index_html};
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebsiteGenerationError {
@@ -24,20 +24,24 @@ pub type OutputResult<T> = Result<T, WebsiteGenerationError>;
 #[derive(Debug)]
 pub struct WebPageHtmlTemplates {
     pub article: String,
+    pub index: String,
+    pub index_list: String,
 }
 
 pub fn load_templates(template_dir: &Directory) -> OutputResult<WebPageHtmlTemplates> {
-    let [article] = template_dir.get_files(&[&"_article.html"])?;
+    let [article, index, index_list] = template_dir.get_files(&[&"_article.html", &"_index.html", &"_index-list.html"])?;
 
     Ok(WebPageHtmlTemplates {
         article: article.read_to_string()?,
+        index: index.read_to_string()?,
+        index_list: index_list.read_to_string()?,
     })
 }
 
-pub fn get_webpage_construction<'a>(articles: &'a [ArticlePage]) -> Construction<'a> {
+pub fn get_webpage_construction<'a>(index: Option<&'a IndexPage>, articles: &'a [ArticlePage]) -> Construction<'a> {
     Construction {
         dir: Path::new(""),
-        content: vec![],
+        content: if let Some(index) = index { vec![index.into()] } else { vec![] },
         sub_dir: vec![Construction {
             dir: Path::new("articles"),
             content: articles.iter().map(ConstructFile::from).collect(),
