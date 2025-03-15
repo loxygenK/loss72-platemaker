@@ -1,6 +1,6 @@
 use std::{collections::VecDeque, ops::ControlFlow};
 
-use pulldown_cmark::{Event, Parser};
+use pulldown_cmark::{Event, Options, Parser};
 
 use super::{
     control::{BreakingEventProcess, Ignore},
@@ -23,26 +23,7 @@ impl MarkdownParseResult {
     }
 }
 
-pub fn parse_content(content: &str) -> MarkdownParseResult {
-    let parser_option = pulldown_cmark::Options::all();
-
-    let mut iter = MarkdownParserIter {
-        sub_parser: SubParsers::default(),
-        parser: pulldown_cmark::Parser::new_ext(content, parser_option),
-        ignore: None,
-        finalized: false,
-        last_append: VecDeque::new(),
-    };
-    let mut html = String::new();
-    pulldown_cmark::html::push_html(&mut html, iter.flatten());
-
-    MarkdownParseResult {
-        frontmatter: iter.sub_parser.frontmatter.compose_output().body,
-        html,
-    }
-}
-
-struct MarkdownParserIter<'p> {
+pub struct MarkdownParser<'p> {
     parser: Parser<'p>,
     sub_parser: SubParsers<'p>,
     ignore: Option<Ignore<'p>>,
@@ -50,13 +31,37 @@ struct MarkdownParserIter<'p> {
     last_append: VecDeque<Event<'p>>,
 }
 
-impl MarkdownParserIter<'_> {
+impl<'p> MarkdownParser<'p> {
+    pub fn new(content: &'p str, parser_option: Options) -> Self {
+        MarkdownParser {
+            sub_parser: SubParsers::default(),
+            parser: pulldown_cmark::Parser::new_ext(content, parser_option),
+            ignore: None,
+            finalized: false,
+            last_append: VecDeque::new(),
+        }
+    }
+
+    pub fn run(mut self) -> MarkdownParseResult {
+        let mut html = String::new();
+        pulldown_cmark::html::push_html(&mut html, self.flatten());
+
+        MarkdownParseResult {
+            frontmatter: self.sub_parser.frontmatter.compose_output().body,
+            html,
+        }
+    }
+
+    pub fn parse(content: &'p str, parser_option: Options) -> MarkdownParseResult {
+        Self::new(content, parser_option).run()
+    }
+
     pub fn finalization(&mut self) {
         self.last_append = self.sub_parser.finalize().into();
     }
 }
 
-impl<'p> Iterator for &mut MarkdownParserIter<'p> {
+impl<'p> Iterator for &mut MarkdownParser<'p> {
     type Item = Option<Event<'p>>;
 
     fn next(&mut self) -> Option<Self::Item> {

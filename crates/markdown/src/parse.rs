@@ -3,7 +3,7 @@ mod full_service;
 mod sub_parser;
 
 use super::frontmatter::parse_toml_to_metadata;
-use full_service::parse_content;
+use full_service::MarkdownParser;
 use loss72_platemaker_core::model::Article;
 use loss72_platemaker_structure::ArticleFile;
 
@@ -61,7 +61,7 @@ struct ParsedContent {
 }
 
 fn parse_markdown(content: &str) -> ParseResult<ParsedContent> {
-    let parsed = parse_content(content);
+    let parsed = MarkdownParser::parse(content, pulldown_cmark::Options::all());
 
     Ok(ParsedContent {
         html: parsed.html().to_string(),
