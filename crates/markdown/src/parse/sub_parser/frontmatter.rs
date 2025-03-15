@@ -1,6 +1,6 @@
 use pulldown_cmark::{Event, MetadataBlockKind, Tag, TagEnd};
 
-use crate::parse::sub_parser::{discard, use_next};
+use crate::parse::control::{EventProcessControl, discard, use_next};
 
 use super::SubParser;
 
@@ -22,7 +22,7 @@ pub struct FrontmatterSubParser {
 impl SubParser<'_> for FrontmatterSubParser {
     type Output = Frontmatter;
 
-    fn receive_event<'e>(&mut self, event: &Event<'e>) -> super::EventProcessControl<'e> {
+    fn receive_event<'e>(&mut self, event: &Event<'e>) -> EventProcessControl<'e> {
         match (&self.in_frontmatter, event) {
             (false, &METADATA_TOML_START) => {
                 if self.body.is_some() {

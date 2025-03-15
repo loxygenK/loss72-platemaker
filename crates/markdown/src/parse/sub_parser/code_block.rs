@@ -6,9 +6,9 @@ use syntect::{
     parsing::{SyntaxReference, SyntaxSet},
 };
 
-use crate::parse::sub_parser::{use_html, use_next};
+use crate::parse::control::{EventProcessControl, discard, use_html, use_next};
 
-use super::{SubParser, discard};
+use super::SubParser;
 
 struct CodeBlockParseState {
     lang: String,
@@ -24,10 +24,7 @@ pub struct CodeBlockSubParser {
 impl<'p> SubParser<'p> for CodeBlockSubParser {
     type Output = ();
 
-    fn receive_event(
-        &mut self,
-        event: &pulldown_cmark::Event<'p>,
-    ) -> super::EventProcessControl<'p> {
+    fn receive_event(&mut self, event: &pulldown_cmark::Event<'p>) -> EventProcessControl<'p> {
         match (&mut self.parse_state, event) {
             (None, Event::Start(Tag::CodeBlock(CodeBlockKind::Fenced(lang)))) => {
                 self.parse_state = Some(CodeBlockParseState {

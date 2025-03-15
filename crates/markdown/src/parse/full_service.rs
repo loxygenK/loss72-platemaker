@@ -2,7 +2,10 @@ use std::{collections::VecDeque, ops::ControlFlow};
 
 use pulldown_cmark::{Event, Parser};
 
-use super::sub_parser::{BreakingEventProcess, SubParser, SubParsers};
+use super::{
+    control::{BreakingEventProcess, Ignore},
+    sub_parser::{SubParser, SubParsers},
+};
 
 #[derive(Default, Debug)]
 pub struct MarkdownParseResult {
@@ -36,53 +39,6 @@ pub fn parse_content(content: &str) -> MarkdownParseResult {
     MarkdownParseResult {
         frontmatter: iter.sub_parser.frontmatter.compose_output().body,
         html,
-    }
-}
-
-pub enum Ignore<'p> {
-    ForNext(u8),
-    ForNextIf(u8, fn(&Event<'p>) -> bool),
-}
-
-impl std::fmt::Debug for Ignore<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Ignore::ForNext(count) => {
-                f.debug_tuple("Ignore<'_>::ForNext").field(count).finish()?;
-            }
-            Ignore::ForNextIf(count, _) => {
-                f.debug_tuple("Ignore<'_>::ForNextIf")
-                    .field(count)
-                    .field(&"(pred)")
-                    .finish()?;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl<'p> Ignore<'p> {
-    pub fn next(&self, event: &Event<'p>) -> (bool, Option<Ignore<'p>>) {
-        match self {
-            Self::ForNext(0) => (false, None),
-            Self::ForNext(count) => (
-                true,
-                if count == &1 {
-                    None
-                } else {
-                    Some(Ignore::ForNext(count - 1))
-                },
-            ),
-            Self::ForNextIf(count, predicate) => (
-                predicate(event),
-                if count == &1 {
-                    None
-                } else {
-                    Some(Ignore::ForNext(count - 1))
-                },
-            ),
-        }
     }
 }
 
@@ -133,7 +89,9 @@ impl<'p> Iterator for &mut MarkdownParserIter<'p> {
                 Some(ignore.replacement.unwrap_or(event))
             }
             ControlFlow::Break(BreakingEventProcess::Discard) => None,
-            ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement)) => Some(replacement),
+            ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement)) => {
+                Some(replacement)
+            }
         })
     }
 }

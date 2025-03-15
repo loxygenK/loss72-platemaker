@@ -2,7 +2,9 @@ use std::cmp::Ordering;
 
 use pulldown_cmark::{Event, Tag, TagEnd};
 
-use super::{EventProcessControl, SubParser, discard, use_html, use_next};
+use crate::parse::control::{EventProcessControl, discard, use_html, use_next};
+
+use super::SubParser;
 
 #[derive(Debug)]
 struct FootNoteDefinition<'p> {

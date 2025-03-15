@@ -5,9 +5,9 @@ use loss72_platemaker_template::Placeholder;
 use pulldown_cmark::Event;
 use regex::Regex;
 
-use crate::parse::full_service::Ignore;
+use crate::parse::control::{EventProcessControl, Ignore, Next, use_next, use_next_with};
 
-use super::{Next, SubParser, use_next, use_next_with};
+use super::SubParser;
 
 #[derive(Default)]
 pub struct TextParser {
@@ -17,10 +17,7 @@ pub struct TextParser {
 impl<'p> SubParser<'p> for TextParser {
     type Output = ();
 
-    fn receive_event(
-        &mut self,
-        event: &pulldown_cmark::Event<'p>,
-    ) -> super::EventProcessControl<'p> {
+    fn receive_event(&mut self, event: &pulldown_cmark::Event<'p>) -> EventProcessControl<'p> {
         if let Event::Text(text) = event {
             use_next_with(Next {
                 ignore: Some(Ignore::ForNextIf(1, Self::ignore_if_softbreak)),

@@ -1,3 +1,4 @@
+mod control;
 mod full_service;
 mod sub_parser;
 
