@@ -34,7 +34,8 @@ impl<T: GroundingWidget> Widget for T {
             return String::new();
         };
 
-        format!(r#"
+        format!(
+            r#"
             <section>
               <h3>
                 <span>{first_title}</span>
@@ -44,7 +45,8 @@ impl<T: GroundingWidget> Widget for T {
                 {content}
               </div>
             </section>
-        "#)
+        "#
+        )
     }
 
     fn style(&self) -> &'static str {
@@ -70,7 +72,7 @@ impl Widgets {
             self.ai.render_widget(),
             self.article_type.render_widget(),
             self.sources.render_widget(),
-            ("widget_styles", self.concatenate_styles())
+            ("widget_styles", self.concatenate_styles()),
         ])
     }
 
@@ -79,8 +81,7 @@ impl Widgets {
         style.push_str(self.ai.style());
         style.push_str(self.article_type.style());
         style.push_str(self.sources.style());
-        
+
         style
     }
 }
-

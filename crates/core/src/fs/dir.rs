@@ -21,9 +21,7 @@ impl Directory {
         Ok(Directory(path.to_path_buf()))
     }
 
-    pub fn new_with_mkdir(
-        path: impl AsRef<Path>,
-    ) -> std::io::Result<Self> {
+    pub fn new_with_mkdir(path: impl AsRef<Path>) -> std::io::Result<Self> {
         let path = path.as_ref();
         if !path.exists() {
             std::fs::create_dir_all(&path)?;
@@ -40,10 +38,7 @@ impl Directory {
         &self.0
     }
 
-    pub fn get_child(
-        &self,
-        path: impl AsRef<Path>,
-    ) -> Option<std::io::Result<Directory>> {
+    pub fn get_child(&self, path: impl AsRef<Path>) -> Option<std::io::Result<Directory>> {
         let child_path = self.path().join(path);
         if child_path.exists() {
             Some(Directory::new(child_path))
@@ -52,10 +47,7 @@ impl Directory {
         }
     }
 
-    pub fn get_or_mkdir_child(
-        &self,
-        path: impl AsRef<Path>,
-    ) -> std::io::Result<Directory> {
+    pub fn get_or_mkdir_child(&self, path: impl AsRef<Path>) -> std::io::Result<Directory> {
         Directory::new_with_mkdir(self.path().join(path))
     }
 

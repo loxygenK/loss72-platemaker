@@ -1,4 +1,7 @@
-use std::{io::ErrorKind, path::{Path, PathBuf}};
+use std::{
+    io::ErrorKind,
+    path::{Path, PathBuf},
+};
 
 use super::{Directory, FSNode};
 

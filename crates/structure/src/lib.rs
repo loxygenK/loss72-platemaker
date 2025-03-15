@@ -1,4 +1,7 @@
-use std::{ops::Deref, path::{Path, PathBuf}};
+use std::{
+    ops::Deref,
+    path::{Path, PathBuf},
+};
 
 use loss72_platemaker_core::fs::{Directory, FSNode, File};
 
@@ -17,13 +20,11 @@ impl<'dir> ContentDirectory<'dir> {
         let markdown_files = article_group
             .iter()
             .map(|group| {
-                Directory::new(dir.path().join(group.group_dir_path()))
-                    .and_then(|dir|
-                        dir
-                            .try_iter_content()?
-                            .into_iter()
-                            .collect::<Result<Vec<_>, _>>()
-                    )
+                Directory::new(dir.path().join(group.group_dir_path())).and_then(|dir| {
+                    dir.try_iter_content()?
+                        .into_iter()
+                        .collect::<Result<Vec<_>, _>>()
+                })
             })
             .collect::<Result<Vec<_>, _>>()?
             .into_iter()

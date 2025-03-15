@@ -3,9 +3,7 @@ use serde::Deserialize;
 use crate::GroundingWidget;
 
 #[derive(Clone, Default, Deserialize, Debug)]
-pub struct Sources(
-    Vec<Source>
-);
+pub struct Sources(Vec<Source>);
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct Source {
@@ -27,7 +25,10 @@ impl GroundingWidget for Sources {
 
         Some(format!(
             "<ul>{}</ul>",
-            self.0.iter().map(|source| source.to_html()).collect::<String>(),
+            self.0
+                .iter()
+                .map(|source| source.to_html())
+                .collect::<String>(),
         ))
     }
 
@@ -50,12 +51,13 @@ impl Source {
         let name = &self.name;
         let url = &self.url;
 
-        format!(r#"
+        format!(
+            r#"
             <li class="source">
                 <h4 class="name">{name}</h4>
                 <a href={url}><span>{url}</span></a>
             </li>
-        "#)
+        "#
+        )
     }
 }
-

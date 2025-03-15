@@ -8,7 +8,9 @@ use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
 use crate::{
-    build_tasks::{build_files, copy_individual_assets_files, copy_individual_template_files, full_build},
+    build_tasks::{
+        build_files, copy_individual_assets_files, copy_individual_template_files, full_build,
+    },
     config::Configuration,
     error::{report_error, report_if_fail},
 };

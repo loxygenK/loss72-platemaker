@@ -1,7 +1,10 @@
 use std::path::Path;
 
 use loss72_platemaker_construct::{copy_dir_recursively, copy_files, copy_individual_file};
-use loss72_platemaker_core::{fs::{Directory, File}, log};
+use loss72_platemaker_core::{
+    fs::{Directory, File},
+    log,
+};
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
 use loss72_platemaker_structure::{ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
 use loss72_platemaker_website::{
@@ -55,11 +58,7 @@ pub fn build_files(config: &Configuration, files: &[ArticleFile]) -> TaskResult<
     let html_templates = load_templates(&config.html_template_dir)?;
 
     let articles = files
-        .filter_map(|file| {
-            parse_markdown(&file)
-                .inspect_err(report_error)
-                .ok()
-        })
+        .filter_map(|file| parse_markdown(&file).inspect_err(report_error).ok())
         .collect::<Vec<_>>();
 
     log!(ok: "Built {} articles", articles.len());
@@ -109,16 +108,14 @@ pub fn copy_asset_files(config: &Configuration, article_group: &[ArticleGroup]) 
     let directories = article_group
         .iter()
         .flat_map(|group| {
-            let dir = Directory::new(config.article_md_dir
-                .path()
-                .join(group.group_dir_path())
-            );
+            let dir = Directory::new(config.article_md_dir.path().join(group.group_dir_path()));
             let dir = match dir {
                 Ok(dir) => dir,
                 Err(e) => return Some(Err(e)),
             };
 
-            dir.get_child("assets").map(|dir| dir.map(|dir| (dir, group)))
+            dir.get_child("assets")
+                .map(|dir| dir.map(|dir| (dir, group)))
         })
         .collect::<Result<Vec<_>, _>>()?;
 
@@ -129,7 +126,7 @@ pub fn copy_asset_files(config: &Configuration, article_group: &[ArticleGroup]) 
                 Path::new(".")
                     .join("articles")
                     .join(group.group_dir_flat_path())
-                    .join("assets")
+                    .join("assets"),
             )?,
             &[],
         )?;
@@ -175,14 +172,15 @@ pub fn copy_individual_assets_files(config: &Configuration, files: &[AssetFile])
     log!(job_start: "Updating asset files");
 
     for file in files {
-        let file_root = config.article_md_dir
+        let file_root = config
+            .article_md_dir
             .get_child(file.group.group_dir_path().join("assets"))
             .unwrap()?;
         let dest_dir = &config.destination.get_or_mkdir_child(
             Path::new(".")
                 .join("articles")
                 .join(file.group.group_dir_flat_path())
-                .join("assets")
+                .join("assets"),
         )?;
 
         copy_individual_file(&file_root, &dest_dir, file.file())?;

@@ -39,7 +39,11 @@ pub fn copy_files(dir: &Directory, dest: &Directory, files: &[File]) -> Result<(
     Ok(())
 }
 
-pub fn copy_individual_file(dir: &Directory, dest: &Directory, file: &File) -> Result<(), std::io::Error> {
+pub fn copy_individual_file(
+    dir: &Directory,
+    dest: &Directory,
+    file: &File,
+) -> Result<(), std::io::Error> {
     log!(step: "Copying file: {}", file.path().display());
 
     let subpath_in_dest = file.path().strip_prefix(dir.path()).unwrap_or(file.path());
@@ -51,7 +55,6 @@ pub fn copy_individual_file(dir: &Directory, dest: &Directory, file: &File) -> R
 
     std::fs::copy(file.path(), dest).map(|_| ())
 }
-
 
 fn excluded(root: &Path, path: &Path, excludes: &[PathBuf]) -> bool {
     excludes.iter().any(|excluding| {

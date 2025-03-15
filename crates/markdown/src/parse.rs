@@ -1,7 +1,8 @@
 mod full_service;
+mod sub_parser;
 
-use super::{emoji::replace_emoji_from_shortcode, frontmatter::parse_toml_to_metadata};
-use full_service::MarkdownParseResult;
+use super::frontmatter::parse_toml_to_metadata;
+use full_service::parse_content;
 use loss72_platemaker_core::model::Article;
 use loss72_platemaker_structure::ArticleFile;
 
@@ -31,13 +32,11 @@ pub fn make_article_from_markdown(file: &ArticleFile, content: &str) -> ParseRes
     let content = parse_markdown(content)?;
     let metadata = parse_toml_to_metadata(&content.frontmatter)?;
 
-    let content = replace_emoji_from_shortcode(&content.html);
-
     Ok(Article {
         group,
         slug,
         metadata,
-        content,
+        content: content.html,
     })
 }
 
@@ -61,10 +60,13 @@ struct ParsedContent {
 }
 
 fn parse_markdown(content: &str) -> ParseResult<ParsedContent> {
-    let parsed = MarkdownParseResult::parse_content(content);
+    let parsed = parse_content(content);
 
     Ok(ParsedContent {
         html: parsed.html().to_string(),
-        frontmatter: parsed.frontmatter().ok_or(ParseError::NoFrontmatter)?.to_string(),
+        frontmatter: parsed
+            .frontmatter()
+            .ok_or(ParseError::NoFrontmatter)?
+            .to_string(),
     })
 }

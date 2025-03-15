@@ -22,7 +22,8 @@ impl Widget for ArticleType {
     const TAG: &'static str = "type";
 
     fn build(&self) -> String {
-        format!(r#"
+        format!(
+            r#"
             <h2 class="article-type">
                 {}
             </h2>
@@ -35,5 +36,3 @@ impl Widget for ArticleType {
         ""
     }
 }
-
-
