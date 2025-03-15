@@ -1,6 +1,6 @@
 use std::ops::ControlFlow;
 
-use pulldown_cmark::Event;
+use pulldown_cmark::{CowStr, Event};
 
 use super::full_service::Ignore;
 
@@ -72,7 +72,7 @@ impl<'p> Next<'p> {
 
 pub enum BreakingEventProcess<'p> {
     Discard,
-    UseThisInstead(Vec<Event<'p>>),
+    UseThisInstead(Event<'p>),
 }
 
 pub type EventProcessControl<'p> = ControlFlow<BreakingEventProcess<'p>, Next<'p>>;
@@ -81,12 +81,12 @@ pub fn discard<'p>() -> EventProcessControl<'p> {
     ControlFlow::Break(BreakingEventProcess::Discard)
 }
 
-pub fn use_this_instead(replacement: Vec<Event>) -> EventProcessControl {
+pub fn use_this_instead(replacement: Event) -> EventProcessControl {
     ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement))
 }
 
-pub fn use_html<'p>(replacement: &str) -> EventProcessControl<'p> {
-    use_this_instead(vec![Event::Html(replacement.to_string().into())])
+pub fn use_html(replacement: CowStr) -> EventProcessControl {
+    use_this_instead(Event::Html(replacement))
 }
 
 pub fn use_next<'p>() -> EventProcessControl<'p> {

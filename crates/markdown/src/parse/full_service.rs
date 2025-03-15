@@ -101,7 +101,7 @@ impl MarkdownParserIter<'_> {
 }
 
 impl<'p> Iterator for &mut MarkdownParserIter<'p> {
-    type Item = Vec<Event<'p>>;
+    type Item = Option<Event<'p>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let event = {
@@ -116,16 +116,12 @@ impl<'p> Iterator for &mut MarkdownParserIter<'p> {
             }
         };
 
-        if self.finalized {
-            print!("\x1b[38;5;70m");
-        }
-
         if let Some(ignore) = &self.ignore {
             let (should_ignore, ignore_next) = ignore.next(&event);
             self.ignore = ignore_next;
 
             if should_ignore {
-                return Some(vec![]);
+                return Some(None);
             }
         }
 
@@ -134,10 +130,10 @@ impl<'p> Iterator for &mut MarkdownParserIter<'p> {
                 if ignore.ignore.is_some() {
                     self.ignore = ignore.ignore;
                 }
-                vec![ignore.replacement.unwrap_or(event)]
+                Some(ignore.replacement.unwrap_or(event))
             }
-            ControlFlow::Break(BreakingEventProcess::Discard) => vec![],
-            ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement)) => replacement,
+            ControlFlow::Break(BreakingEventProcess::Discard) => None,
+            ControlFlow::Break(BreakingEventProcess::UseThisInstead(replacement)) => Some(replacement),
         })
     }
 }

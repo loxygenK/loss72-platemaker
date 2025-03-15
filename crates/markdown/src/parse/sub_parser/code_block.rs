@@ -43,7 +43,7 @@ impl<'p> SubParser<'p> for CodeBlockSubParser {
                     .generate_highlighted_html(&state.lang, text.as_ref());
                 state.has_content = true;
 
-                use_html(&html)
+                use_html(html.into())
             }
             (Some(state), Event::End(TagEnd::CodeBlock)) => {
                 let has_content = state.has_content;
@@ -52,7 +52,7 @@ impl<'p> SubParser<'p> for CodeBlockSubParser {
                 if has_content {
                     discard()
                 } else {
-                    use_html(&self.highlighter.generate_highlighted_html("", ""))
+                    use_html(self.highlighter.generate_highlighted_html("", "").into())
                 }
             }
             (Some(_), _) => {

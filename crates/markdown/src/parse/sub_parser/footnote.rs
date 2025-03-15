@@ -104,7 +104,7 @@ impl<'p> SubParser<'p> for FootnoteSubParser<'p> {
                 self.building_footnotes = Some(FootNoteDefinition::new(id));
                 discard()
             }
-            Event::FootnoteReference(id) => use_html(&self.add_footnote_reference(id)),
+            Event::FootnoteReference(id) => use_html(self.add_footnote_reference(id).into()),
             _ => use_next(),
         }
     }
