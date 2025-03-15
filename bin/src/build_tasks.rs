@@ -30,7 +30,6 @@ pub type TaskResult<T> = Result<T, TaskError>;
 pub fn full_build(config: &Configuration) -> TaskResult<()> {
     log!(job_start: "Building all articles in {}", config.article_md_dir.path().display());
 
-    println!("{:#?}", config.article_md_dir);
     let content_dir = ContentDirectory::new(&config.article_md_dir)?;
 
     log!(ok: "Discovered {} articles", content_dir.markdown_files.len());
