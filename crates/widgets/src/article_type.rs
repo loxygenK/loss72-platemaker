@@ -20,7 +20,7 @@ impl ArticleType {
     pub fn class_name(&self) -> &str {
         match self {
             Self::Activity => "article-activity",
-            Self::Research => "article-research"
+            Self::Research => "article-research",
         }
     }
 }

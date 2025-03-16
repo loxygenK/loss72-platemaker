@@ -67,14 +67,37 @@ pub fn generate_index_html(
         .expect("Regex is validated to include the capture group");
 
     // We create list elements first
-    let article_tag_iter = article.iter()
+    let article_tag_iter = article
+        .iter()
         .map(|page| {
             let (year, month, day) = page.article.id.date;
 
             let placeholder_contents = HashMap::from([
-                ("url", Path::new("/articles").join(&page.path).to_string_lossy().to_string()),
-                ("type_class", page.article.metadata.widgets.article_type.class_name().to_string()),
-                ("type_name", page.article.metadata.widgets.article_type.description().to_string()),
+                (
+                    "url",
+                    Path::new("/articles")
+                        .join(&page.path)
+                        .to_string_lossy()
+                        .to_string(),
+                ),
+                (
+                    "type_class",
+                    page.article
+                        .metadata
+                        .widgets
+                        .article_type
+                        .class_name()
+                        .to_string(),
+                ),
+                (
+                    "type_name",
+                    page.article
+                        .metadata
+                        .widgets
+                        .article_type
+                        .description()
+                        .to_string(),
+                ),
                 ("title", page.article.metadata.title.clone()),
                 ("brief", page.article.metadata.brief.clone()),
                 ("year", year.to_string()),
@@ -101,7 +124,7 @@ pub fn generate_index_html(
             .partially_fill_placeholders(&html_templates.index, |name| {
                 placeholder_contents.get(name).cloned()
             })
-            .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?
+            .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?,
     })
 }
 
@@ -118,7 +141,15 @@ pub fn generate_article_html<'article>(
         ("title", article.metadata.title.clone()),
         ("slug", article.id.slug.clone()),
         ("content", article.content.clone()),
-        ("type_class", article.metadata.widgets.article_type.class_name().to_string()),
+        (
+            "type_class",
+            article
+                .metadata
+                .widgets
+                .article_type
+                .class_name()
+                .to_string(),
+        ),
     ]);
 
     placeholder_contents.extend(article.metadata.widgets.render_to_placeholder_content());

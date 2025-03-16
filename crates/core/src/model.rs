@@ -9,7 +9,7 @@ use crate::util::get_slice_by_char;
 pub struct ArticleIdentifier {
     pub group: String,
     pub slug: String,
-    pub date: (u32, u8, u8)
+    pub date: (u32, u8, u8),
 }
 
 #[derive(Clone)]

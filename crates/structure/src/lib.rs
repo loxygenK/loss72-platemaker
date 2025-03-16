@@ -1,8 +1,14 @@
 pub mod template;
 
-use std::{ops::Deref, path::{Path, PathBuf}};
+use std::{
+    ops::Deref,
+    path::{Path, PathBuf},
+};
 
-use loss72_platemaker_core::{fs::{Directory, FSNode, File}, model::ArticleIdentifier};
+use loss72_platemaker_core::{
+    fs::{Directory, FSNode, File},
+    model::ArticleIdentifier,
+};
 
 pub struct ContentDirectory<'dir> {
     pub dir: &'dir Directory,
@@ -67,10 +73,7 @@ impl ArticleGroup {
     }
 
     fn from_path(value: &Path) -> Option<(Self, Vec<String>)> {
-        let mut components = value
-            .iter()
-            .take(2)
-            .filter_map(|cmp| cmp.to_str());
+        let mut components = value.iter().take(2).filter_map(|cmp| cmp.to_str());
 
         let year = components.next()?.parse::<u32>().ok()?;
         let month = components.next()?.parse::<u8>().ok()?;
@@ -134,7 +137,11 @@ impl ArticleFile {
         let day = day.parse::<u8>().ok()?;
 
         let id = ArticleIdentifier {
-            group: file.group.group_dir_flat_path().to_string_lossy().to_string(),
+            group: file
+                .group
+                .group_dir_flat_path()
+                .to_string_lossy()
+                .to_string(),
             slug: slug.to_string(),
             date: (file.group.year, file.group.month, day),
         };

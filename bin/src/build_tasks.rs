@@ -6,9 +6,13 @@ use loss72_platemaker_core::{
     log,
 };
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
-use loss72_platemaker_structure::{template::{is_template_file, template_file_paths}, ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
+use loss72_platemaker_structure::{
+    ArticleFile, ArticleGroup, AssetFile, ContentDirectory,
+    template::{is_template_file, template_file_paths},
+};
 use loss72_platemaker_website::{
-    WebsiteGenerationError, generate_article_html, generate_index_html, get_webpage_construction, load_templates,
+    WebsiteGenerationError, generate_article_html, generate_index_html, get_webpage_construction,
+    load_templates,
 };
 
 use crate::{config::Configuration, error::report_error};
@@ -46,7 +50,11 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
     result
 }
 
-pub fn build_files(config: &Configuration, files: &[ArticleFile], full_build: bool) -> TaskResult<()> {
+pub fn build_files(
+    config: &Configuration,
+    files: &[ArticleFile],
+    full_build: bool,
+) -> TaskResult<()> {
     let mut files = files.iter().peekable();
 
     if files.peek().is_none() {
@@ -152,10 +160,13 @@ pub fn copy_individual_template_files(config: &Configuration, files: &[File]) ->
 
     log!(job_start: "Updating template files");
 
-    if files
-        .iter()
-        .any(|file| is_template_file(file.path().strip_prefix(config.html_template_dir.path()).unwrap_or(file.path())))
-    {
+    if files.iter().any(|file| {
+        is_template_file(
+            file.path()
+                .strip_prefix(config.html_template_dir.path())
+                .unwrap_or(file.path()),
+        )
+    }) {
         log!(warn: "Article page template file is updated! Rebuilding all articles.");
         full_build(config)?;
     }

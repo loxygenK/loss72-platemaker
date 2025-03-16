@@ -11,6 +11,7 @@ pub fn template_file_paths() -> [PathBuf; 3] {
 }
 
 pub fn is_template_file(path: &Path) -> bool {
-    TEMPLATE_FILES.iter().any(|template| path.file_name().is_some_and(|file| &file == template))
+    TEMPLATE_FILES
+        .iter()
+        .any(|template| path.file_name().is_some_and(|file| &file == template))
 }
-
