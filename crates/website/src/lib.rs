@@ -25,15 +25,20 @@ pub type OutputResult<T> = Result<T, WebsiteGenerationError>;
 pub struct WebPageHtmlTemplates {
     pub article: String,
     pub index: String,
+    pub index_style: String,
     pub index_list: String,
 }
 
 pub fn load_templates(template_dir: &Directory) -> OutputResult<WebPageHtmlTemplates> {
     let [article, index, index_list] = template_dir.get_files(&[&"_article.html", &"_index.html", &"_index-list.html"])?;
+    let [index_style] = template_dir.get_child(Path::new("styles"))
+        .ok_or(std::io::Error::from(std::io::ErrorKind::NotFound))??
+        .get_files(&[&"index.css"])?;
 
     Ok(WebPageHtmlTemplates {
         article: article.read_to_string()?,
         index: index.read_to_string()?,
+        index_style: index_style.read_to_string()?,
         index_list: index_list.read_to_string()?,
     })
 }

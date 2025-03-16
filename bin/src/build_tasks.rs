@@ -6,7 +6,7 @@ use loss72_platemaker_core::{
     log,
 };
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
-use loss72_platemaker_structure::{ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
+use loss72_platemaker_structure::{template::{is_template_file, template_file_paths}, ArticleFile, ArticleGroup, AssetFile, ContentDirectory};
 use loss72_platemaker_website::{
     WebsiteGenerationError, generate_article_html, generate_index_html, get_webpage_construction, load_templates,
 };
@@ -101,7 +101,7 @@ pub fn copy_template_files(config: &Configuration) -> TaskResult<()> {
     copy_dir_recursively(
         &config.html_template_dir,
         &config.destination,
-        &["_article.html".into()],
+        &template_file_paths(),
     )?;
 
     Ok(())
@@ -152,11 +152,9 @@ pub fn copy_individual_template_files(config: &Configuration, files: &[File]) ->
 
     log!(job_start: "Updating template files");
 
-    let template_file = config.html_template_dir.path().join("_article.html");
-
     if files
         .iter()
-        .any(|file| file.path() == template_file.as_path())
+        .any(|file| is_template_file(file.path().strip_prefix(config.html_template_dir.path()).unwrap_or(file.path())))
     {
         log!(warn: "Article page template file is updated! Rebuilding all articles.");
         full_build(config)?;

@@ -29,29 +29,14 @@ pub enum ParseError {
 }
 
 pub fn make_article_from_markdown(file: &ArticleFile, content: &str) -> ParseResult<Article> {
-    let (group, slug) = path_into_group_and_slug(file)?;
     let content = parse_markdown(content)?;
     let metadata = parse_toml_to_metadata(&content.frontmatter)?;
 
     Ok(Article {
-        group,
-        slug,
+        id: file.id.clone(),
         metadata,
         content: content.html,
     })
-}
-
-pub fn path_into_group_and_slug(file: &ArticleFile) -> ParseResult<(String, String)> {
-    let [day_and_slug] = file.suffix_components.as_slice() else {
-        return Err(ParseError::InvalidStructure);
-    };
-
-    let day_and_slug = day_and_slug.strip_suffix(".md").unwrap_or(day_and_slug);
-
-    Ok((
-        format!("{:0>4}{:0>2}", file.group.year, file.group.month),
-        day_and_slug.to_string(),
-    ))
 }
 
 #[derive(Clone, Debug)]

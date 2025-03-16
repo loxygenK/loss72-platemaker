@@ -35,7 +35,7 @@ impl GroundingWidget for Sources {
     fn content_style(&self) -> &'static str {
         r#"
             .source {
-                color: var(--primary);
+                color: var(--typed-primary);
             }
 
             .name {

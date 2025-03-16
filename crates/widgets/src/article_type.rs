@@ -16,6 +16,13 @@ impl ArticleType {
             Self::Research => "学習記録",
         }
     }
+
+    pub fn class_name(&self) -> &str {
+        match self {
+            Self::Activity => "article-activity",
+            Self::Research => "article-research"
+        }
+    }
 }
 
 impl Widget for ArticleType {

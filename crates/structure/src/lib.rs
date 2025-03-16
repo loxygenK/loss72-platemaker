@@ -1,9 +1,8 @@
-use std::{
-    ops::Deref,
-    path::{Path, PathBuf},
-};
+pub mod template;
 
-use loss72_platemaker_core::fs::{Directory, FSNode, File};
+use std::{ops::Deref, path::{Path, PathBuf}};
+
+use loss72_platemaker_core::{fs::{Directory, FSNode, File}, model::ArticleIdentifier};
 
 pub struct ContentDirectory<'dir> {
     pub dir: &'dir Directory,
@@ -40,8 +39,8 @@ impl<'dir> ContentDirectory<'dir> {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ArticleGroup {
-    pub year: usize,
-    pub month: usize,
+    pub year: u32,
+    pub month: u8,
 }
 
 impl ArticleGroup {
@@ -71,10 +70,10 @@ impl ArticleGroup {
         let mut components = value
             .iter()
             .take(2)
-            .filter_map(|cmp| cmp.to_str().and_then(|cmp| cmp.parse::<usize>().ok()));
+            .filter_map(|cmp| cmp.to_str());
 
-        let year = components.next()?;
-        let month = components.next()?;
+        let year = components.next()?.parse::<u32>().ok()?;
+        let month = components.next()?.parse::<u8>().ok()?;
 
         let suffix_components = value
             .iter()
@@ -108,22 +107,44 @@ impl ArticleGroupNode {
 }
 
 #[derive(Debug)]
-pub struct ArticleFile(pub ArticleGroupNode);
+pub struct ArticleFile {
+    pub node: ArticleGroupNode,
+    pub id: ArticleIdentifier,
+}
 
 impl ArticleFile {
     pub fn from_file(file: &File, root: &Directory) -> Option<Self> {
         let file = ArticleGroupNode::from_node(file.clone().into(), root)?;
 
-        // matches to files in /path/to/root/*.md
-        if matches!(file.suffix_components.as_slice(), [first] if first.ends_with(".md")) {
-            Some(Self(file))
-        } else {
-            None
-        }
+        // matches to files in /path/to/root/[numeric]_*.md
+        let [first] = file.suffix_components.as_slice() else {
+            return None;
+        };
+
+        let slug_and_ext = first.split(".").collect::<Vec<_>>();
+        let [slug, "md"] = slug_and_ext.as_slice() else {
+            return None;
+        };
+
+        let day_and_rest = slug.split("_").collect::<Vec<_>>();
+        let [day, ..] = day_and_rest.as_slice() else {
+            return None;
+        };
+
+        let day = day.parse::<u8>().ok()?;
+
+        let id = ArticleIdentifier {
+            group: file.group.group_dir_flat_path().to_string_lossy().to_string(),
+            slug: slug.to_string(),
+            date: (file.group.year, file.group.month, day),
+        };
+
+        Some(Self { node: file, id })
     }
 
     pub fn file(&self) -> &File {
         self.node
+            .node
             .file()
             .expect("Node to be saved as `from_file` initializes")
     }
@@ -133,7 +154,7 @@ impl Deref for ArticleFile {
     type Target = ArticleGroupNode;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.node
     }
 }
 

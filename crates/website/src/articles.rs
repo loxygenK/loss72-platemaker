@@ -14,7 +14,6 @@ pub struct IndexPage {
     pub path: PathBuf,
 }
 
-
 impl<'p> From<&'p IndexPage> for ConstructFile<'p> {
     fn from(value: &'p IndexPage) -> Self {
         ConstructFile {
@@ -70,10 +69,19 @@ pub fn generate_index_html(
     // We create list elements first
     let article_tag_iter = article.iter()
         .map(|page| {
+            let (year, month, day) = page.article.id.date;
+
             let placeholder_contents = HashMap::from([
-                ("url", page.path.to_string_lossy().to_string()),
+                ("url", Path::new("/articles").join(&page.path).to_string_lossy().to_string()),
+                ("type_class", page.article.metadata.widgets.article_type.class_name().to_string()),
+                ("type_name", page.article.metadata.widgets.article_type.description().to_string()),
                 ("title", page.article.metadata.title.clone()),
+                ("brief", page.article.metadata.brief.clone()),
+                ("year", year.to_string()),
+                ("month", month.to_string()),
+                ("day", day.to_string()),
             ]);
+
             placeholder
                 .partially_fill_placeholders(&html_templates.index_list, |name| {
                     placeholder_contents.get(name).cloned()
@@ -82,7 +90,10 @@ pub fn generate_index_html(
         })
         .collect::<Result<String, _>>()?;
 
-    let placeholder_contents = HashMap::from([("articles", article_tag_iter)]);
+    let placeholder_contents = HashMap::from([
+        ("articles", article_tag_iter),
+        ("style", html_templates.index_style.clone()),
+    ]);
 
     Ok(IndexPage {
         path: PathBuf::from("index.html"),
@@ -98,15 +109,16 @@ pub fn generate_article_html<'article>(
     html_templates: &WebPageHtmlTemplates,
     article: &'article Article,
 ) -> OutputResult<ArticlePage<'article>> {
-    log!(step: "Generating HTML for slug '{}'", &article.slug);
+    log!(step: "Generating HTML for slug '{}'", &article.id.slug);
 
     let placeholder = Placeholder::from_strs("${", "}", None)
         .expect("Regex is validated to include the capture group");
 
     let mut placeholder_contents = HashMap::from([
         ("title", article.metadata.title.clone()),
-        ("slug", article.slug.clone()),
+        ("slug", article.id.slug.clone()),
         ("content", article.content.clone()),
+        ("type_class", article.metadata.widgets.article_type.class_name().to_string()),
     ]);
 
     placeholder_contents.extend(article.metadata.widgets.render_to_placeholder_content());
@@ -118,6 +130,6 @@ pub fn generate_article_html<'article>(
                 placeholder_contents.get(name).cloned()
             })
             .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?,
-        path: Path::new(&article.group).join(format!("{}.html", &article.slug)),
+        path: Path::new(&article.id.group).join(format!("{}.html", &article.id.slug)),
     })
 }

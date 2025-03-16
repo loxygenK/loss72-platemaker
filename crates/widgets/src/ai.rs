@@ -80,13 +80,14 @@ impl Widget for AiUsage {
     fn style(&self) -> &'static str {
         r#"
             .aiusage {
-                border: 1px solid var(--primary);
-                color: var(--primary);
-                padding: 0px 6px;
+                border: 1px solid var(--typed-primary);
+                color: var(--typed-primary);
+                padding: 6px 12px;
                 width: fit-content;
+                line-height: 110%;
 
                 &.aiusage-heavy {
-                    background-color: var(--primary);
+                    background-color: var(--typed-primary);
                     color: white;
                 }
 
