@@ -75,44 +75,14 @@ pub fn generate_index_html(
     let article_tag_iter = article
         .iter()
         .map(|page| {
-            let (year, month, day) = page.article.id.date;
-
-            let placeholder_contents = HashMap::from([
-                (
-                    "url",
-                    Path::new("/articles")
-                        .join(&page.path)
-                        .to_string_lossy()
-                        .to_string(),
-                ),
-                (
-                    "type_class",
-                    page.article
-                        .metadata
-                        .widgets
-                        .article_type
-                        .class_name()
-                        .to_string(),
-                ),
-                (
-                    "type_name",
-                    page.article
-                        .metadata
-                        .widgets
-                        .article_type
-                        .description()
-                        .to_string(),
-                ),
-                ("title", page.article.metadata.title.clone()),
-                ("brief", page.article.metadata.brief.clone()),
-                ("year", year.to_string()),
-                ("month", month.to_string()),
-                ("day", day.to_string()),
-                ("if-debug", if ctx.release { "".to_string() } else { "<!-- (debug) ".to_string() }),
-                ("end-if-debug", if ctx.release { "".to_string() } else { " (debug) -->".to_string() }),
-                ("if-release", if ctx.release { "<!-- (release) ".to_string() } else { "".to_string() }),
-                ("end-if-release", if ctx.release { " (release) -->".to_string() } else { "".to_string() }),
-            ]);
+            let mut placeholder_contents = article_to_placeholder_content(page.article, ctx);
+                placeholder_contents.insert(
+                "url",
+                Path::new("/articles")
+                    .join(&page.path)
+                    .to_string_lossy()
+                    .to_string(),
+            );
 
             placeholder
                 .partially_fill_placeholders(&html_templates.index_list, |name| {
@@ -148,28 +118,19 @@ pub fn generate_article_html<'article>(
 ) -> OutputResult<ArticlePage<'article>> {
     log!(step: "Generating HTML for slug '{}'", &article.id.slug);
 
+    let path = Path::new(&article.id.group).join(format!("{}.html", &article.id.slug));
+
     let placeholder = Placeholder::from_strs("${", "}", None)
         .expect("Regex is validated to include the capture group");
 
-    let mut placeholder_contents = HashMap::from([
-        ("title", article.metadata.title.clone()),
-        ("slug", article.id.slug.clone()),
-        ("content", article.content.clone()),
-        (
-            "type_class",
-            article
-                .metadata
-                .widgets
-                .article_type
-                .class_name()
-                .to_string(),
-        ),
-        ("if-debug", if ctx.release { "<!-- (if-debug: false) ".to_string() } else { "".to_string() }),
-        ("end-if-debug", if ctx.release { " (end-if-debug: false) -->".to_string() } else { "".to_string() }),
-        ("if-release", if ctx.release { "".to_string() } else { "<!-- (if-release: false) ".to_string() }),
-        ("end-if-release", if ctx.release { "".to_string() } else { " (end-if-release: false) -->".to_string() }),
-    ]);
-
+    let mut placeholder_contents = article_to_placeholder_content(article, ctx);
+    placeholder_contents.insert("content", article.content.clone());
+    placeholder_contents.insert(
+        "path", 
+                Path::new("/articles")
+                    .join(&path)
+                    .to_string_lossy()
+                    .to_string());
     placeholder_contents.extend(article.metadata.widgets.render_to_placeholder_content());
 
     Ok(ArticlePage {
@@ -179,6 +140,43 @@ pub fn generate_article_html<'article>(
                 placeholder_contents.get(name).cloned()
             })
             .map_err(|invalids| WebsiteGenerationError::InvalidPlaceholder(invalids.clone()))?,
-        path: Path::new(&article.id.group).join(format!("{}.html", &article.id.slug)),
+        path,
     })
 }
+
+fn article_to_placeholder_content(article: &Article, ctx: &GenerationContext) -> HashMap<&'static str, String> {
+    let (year, month, day) = article.id.date;
+
+    HashMap::from([
+        (
+            "type_class",
+            article
+                .metadata
+                .widgets
+                .article_type
+                .class_name()
+                .to_string(),
+        ),
+        (
+            "type_name",
+            article
+                .metadata
+                .widgets
+                .article_type
+                .description()
+                .to_string(),
+        ),
+        ("title", article.metadata.title.clone()),
+        ("brief", article.metadata.brief.clone()),
+        ("year", year.to_string()),
+        ("month", month.to_string()),
+        ("day", day.to_string()),
+        ("MM", format!("{:02}", month)),
+        ("DD", format!("{:02}", day)),
+        ("if-debug", if ctx.release { "".to_string() } else { "<!-- (debug) ".to_string() }),
+        ("end-if-debug", if ctx.release { "".to_string() } else { " (debug) -->".to_string() }),
+        ("if-release", if ctx.release { "<!-- (release) ".to_string() } else { "".to_string() }),
+        ("end-if-release", if ctx.release { " (release) -->".to_string() } else { "".to_string() }),
+    ])
+}
+
