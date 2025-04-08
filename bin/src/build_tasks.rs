@@ -3,7 +3,7 @@ use std::path::Path;
 use loss72_platemaker_construct::{copy_dir_recursively, copy_files, copy_individual_file};
 use loss72_platemaker_core::{
     fs::{Directory, File},
-    log,
+    log, model::GenerationContext,
 };
 use loss72_platemaker_markdown::{MarkdownProcessError, parse_markdown};
 use loss72_platemaker_structure::{
@@ -31,7 +31,7 @@ pub enum TaskError {
 
 pub type TaskResult<T> = Result<T, TaskError>;
 
-pub fn full_build(config: &Configuration) -> TaskResult<()> {
+pub fn run_all_build_steps(config: &Configuration, ctx: &GenerationContext) -> TaskResult<()> {
     log!(job_start: "Building all articles in {}", config.article_md_dir.path().display());
 
     let content_dir = ContentDirectory::new(&config.article_md_dir)?;
@@ -39,7 +39,7 @@ pub fn full_build(config: &Configuration) -> TaskResult<()> {
     log!(ok: "Discovered {} articles", content_dir.markdown_files.len());
 
     let result = Ok(())
-        .and_then(|_| build_files(config, &content_dir.markdown_files, true))
+        .and_then(|_| build_files(config, &content_dir.markdown_files, true, &ctx))
         .and_then(|_| copy_template_files(config))
         .and_then(|_| copy_asset_files(config, &content_dir.article_group));
 
@@ -54,6 +54,7 @@ pub fn build_files(
     config: &Configuration,
     files: &[ArticleFile],
     full_build: bool,
+    ctx: &GenerationContext,
 ) -> TaskResult<()> {
     let mut files = files.iter().peekable();
 
@@ -71,12 +72,16 @@ pub fn build_files(
     log!(ok: "Built {} articles", articles.len());
     log!(section: "Generating HTML contents for articles");
 
+    if ctx.release {
+        log!(step: "Using release build!");
+    }
+
     let htmls = articles
         .iter()
-        .map(|article| generate_article_html(&html_templates, article))
+        .map(|article| generate_article_html(&html_templates, article, ctx))
         .collect::<Result<Vec<_>, _>>();
 
-    let htmls = match htmls {
+    let mut htmls = match htmls {
         Ok(htmls) => {
             log!(ok: "Generated all {} article pages", articles.len());
             htmls
@@ -86,8 +91,10 @@ pub fn build_files(
         }
     };
 
+    htmls.sort_by(|left, right| left.article.id.cmp(&right.article.id).reverse());
+
     let index_page = if full_build {
-        Some(generate_index_html(&html_templates, htmls.as_slice())?)
+        Some(generate_index_html(&html_templates, htmls.as_slice(), ctx)?)
     } else {
         None
     };
@@ -148,12 +155,7 @@ pub fn copy_asset_files(config: &Configuration, article_group: &[ArticleGroup]) 
     Ok(())
 }
 
-// TODO: Implement article asset copying feature to...
-//         - full build. For each group, check if `assets` directory exists,
-//           and copy files recursively if exists.
-//         - watch. Just copy individual file using `copy_files`
-
-pub fn copy_individual_template_files(config: &Configuration, files: &[File]) -> TaskResult<()> {
+pub fn copy_individual_template_files(config: &Configuration, files: &[File], ctx: &GenerationContext) -> TaskResult<()> {
     if files.is_empty() {
         return Ok(());
     }
@@ -168,7 +170,7 @@ pub fn copy_individual_template_files(config: &Configuration, files: &[File]) ->
         )
     }) {
         log!(warn: "Article page template file is updated! Rebuilding all articles.");
-        full_build(config)?;
+        run_all_build_steps(config, ctx)?;
     }
 
     copy_files(&config.html_template_dir, &config.destination, files)?;

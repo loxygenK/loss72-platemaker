@@ -17,7 +17,7 @@ use cmd::{
 };
 use config::{Configuration, ConfigurationScheme};
 use error::report_anyway_if_fail;
-use loss72_platemaker_core::{fs::File, log};
+use loss72_platemaker_core::{fs::File, log, model::GenerationContext};
 
 fn main() -> Result<(), &'static str> {
     report_anyway_if_fail(|| {
@@ -27,19 +27,19 @@ fn main() -> Result<(), &'static str> {
 
         println!();
         match args {
-            Commands::Build(_) => build(&config),
-            Commands::Watch(args) => watch(&config, &args.into()),
+            Commands::Build(_) => build(&config, &(&args).into()),
+            Commands::Watch(ref watch_args) => watch(&config, &watch_args.into(), &(&args).into()),
         }
     })
     .map_err(|_| "Failed due to the error above")
 }
 
-fn build(config: &Configuration) -> Result<(), anyhow::Error> {
-    Ok(full_build(config)?)
+fn build(config: &Configuration, ctx: &GenerationContext) -> Result<(), anyhow::Error> {
+    Ok(full_build(config, ctx)?)
 }
 
-fn watch(config: &Configuration, param: &WatchParam) -> Result<(), anyhow::Error> {
-    Ok(watch_for_change(config, param)?)
+fn watch(config: &Configuration, param: &WatchParam, ctx: &GenerationContext) -> Result<(), anyhow::Error> {
+    Ok(watch_for_change(config, param, ctx)?)
 }
 
 fn read_config(path: &Path) -> Result<Configuration, anyhow::Error> {

@@ -2,14 +2,14 @@ use std::{path::PathBuf, time::Duration};
 
 use crossbeam_channel::{RecvError, select, unbounded};
 
-use loss72_platemaker_core::{fs::File, log};
+use loss72_platemaker_core::{fs::File, log, model::GenerationContext};
 use loss72_platemaker_structure::{ArticleFile, AssetFile};
 use notify::{EventKind, RecursiveMode};
 use notify_debouncer_full::{DebounceEventResult, new_debouncer};
 
 use crate::{
     build_tasks::{
-        build_files, copy_individual_assets_files, copy_individual_template_files, full_build,
+        build_files, copy_individual_assets_files, copy_individual_template_files, run_all_build_steps,
     },
     config::Configuration,
     error::{report_error, report_if_fail},
@@ -32,10 +32,10 @@ pub enum Changed {
     Template,
 }
 
-pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<(), WatcherError> {
+pub fn watch_for_change(config: &Configuration, param: &WatchParam, ctx: &GenerationContext) -> Result<(), WatcherError> {
     if param.build_first {
         log!(ok: "--build-first specified - full building first!");
-        report_if_fail(|| full_build(config)).ok();
+        report_if_fail(|| run_all_build_steps(config, ctx)).ok();
         log!(ok: "Full building completed, now starting watch...");
     }
 
@@ -74,7 +74,7 @@ pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<()
                     .filter_map(|file| ArticleFile::from_file(file, &config.article_md_dir))
                     .collect::<Vec<_>>();
 
-                build_files(config, &articles, false)
+                build_files(config, &articles, false, ctx)
                     .inspect_err(report_error)
                     .ok();
 
@@ -91,7 +91,7 @@ pub fn watch_for_change(config: &Configuration, param: &WatchParam) -> Result<()
                     continue;
                 };
 
-                copy_individual_template_files(config, &files)
+                copy_individual_template_files(config, &files, ctx)
                     .inspect_err(report_error)
                     .ok();
             },

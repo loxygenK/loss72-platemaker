@@ -24,7 +24,7 @@ impl GroundingWidget for Sources {
         }
 
         Some(format!(
-            "<ul>{}</ul>",
+            r#"<ul class="sources-list">{}</ul>"#,
             self.0
                 .iter()
                 .map(|source| source.to_html())
@@ -34,13 +34,19 @@ impl GroundingWidget for Sources {
 
     fn content_style(&self) -> &'static str {
         r#"
+            .sources-list {
+                display: flex;
+                flex-direction: column;
+                gap: 1em;
+            }
+
             .source {
                 color: var(--typed-primary);
+                overflow-wrap: anywhere;
             }
 
             .name {
                 font-size: 1.25rem;
-                font-weight: bold;
             }
         "#
     }

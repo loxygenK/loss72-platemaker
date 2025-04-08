@@ -5,11 +5,23 @@ use serde::Deserialize;
 
 use crate::util::get_slice_by_char;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Deserialize, Debug)]
+pub struct GenerationContext {
+    #[serde(default)]
+    pub release: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd)]
 pub struct ArticleIdentifier {
     pub group: String,
     pub slug: String,
     pub date: (u32, u8, u8),
+}
+
+impl Ord for ArticleIdentifier {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.date.cmp(&other.date).then(self.slug.cmp(&other.slug))
+    }
 }
 
 #[derive(Clone)]
@@ -45,3 +57,4 @@ pub struct ArticleMetadata {
     #[serde(default)]
     pub widgets: Widgets,
 }
+

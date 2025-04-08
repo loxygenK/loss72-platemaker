@@ -1,5 +1,5 @@
 use loss72_platemaker_construct::ConstructFile;
-use loss72_platemaker_core::{log, model::Article, util::get_slice_by_char};
+use loss72_platemaker_core::{log, model::{Article, GenerationContext}, util::get_slice_by_char};
 use loss72_platemaker_template::Placeholder;
 use std::{
     any::type_name,
@@ -60,8 +60,13 @@ impl std::fmt::Debug for ArticlePage<'_> {
 pub fn generate_index_html(
     html_templates: &WebPageHtmlTemplates,
     article: &[ArticlePage],
+    ctx: &GenerationContext,
 ) -> OutputResult<IndexPage> {
-    log!(step: "Generating HTML for index page");
+    log!(section: "Generating HTML for index page");
+
+    if ctx.release {
+        log!(step: "Using release build!");
+    }
 
     let placeholder = Placeholder::from_strs("${", "}", None)
         .expect("Regex is validated to include the capture group");
@@ -103,6 +108,10 @@ pub fn generate_index_html(
                 ("year", year.to_string()),
                 ("month", month.to_string()),
                 ("day", day.to_string()),
+                ("if-debug", if ctx.release { "".to_string() } else { "<!-- (debug) ".to_string() }),
+                ("end-if-debug", if ctx.release { "".to_string() } else { " (debug) -->".to_string() }),
+                ("if-release", if ctx.release { "<!-- (release) ".to_string() } else { "".to_string() }),
+                ("end-if-release", if ctx.release { " (release) -->".to_string() } else { "".to_string() }),
             ]);
 
             placeholder
@@ -116,6 +125,10 @@ pub fn generate_index_html(
     let placeholder_contents = HashMap::from([
         ("articles", article_tag_iter),
         ("style", html_templates.index_style.clone()),
+        ("if-debug", if ctx.release { "<!-- (if-debug: false) ".to_string() } else { "".to_string() }),
+        ("end-if-debug", if ctx.release { " (end-if-debug: false) -->".to_string() } else { "".to_string() }),
+        ("if-release", if ctx.release { "".to_string() } else { "<!-- (if-release: false) ".to_string() }),
+        ("end-if-release", if ctx.release { "".to_string() } else { " (end-if-release: false) -->".to_string() }),
     ]);
 
     Ok(IndexPage {
@@ -131,6 +144,7 @@ pub fn generate_index_html(
 pub fn generate_article_html<'article>(
     html_templates: &WebPageHtmlTemplates,
     article: &'article Article,
+    ctx: &GenerationContext,
 ) -> OutputResult<ArticlePage<'article>> {
     log!(step: "Generating HTML for slug '{}'", &article.id.slug);
 
@@ -150,6 +164,10 @@ pub fn generate_article_html<'article>(
                 .class_name()
                 .to_string(),
         ),
+        ("if-debug", if ctx.release { "<!-- (if-debug: false) ".to_string() } else { "".to_string() }),
+        ("end-if-debug", if ctx.release { " (end-if-debug: false) -->".to_string() } else { "".to_string() }),
+        ("if-release", if ctx.release { "".to_string() } else { "<!-- (if-release: false) ".to_string() }),
+        ("end-if-release", if ctx.release { "".to_string() } else { " (end-if-release: false) -->".to_string() }),
     ]);
 
     placeholder_contents.extend(article.metadata.widgets.render_to_placeholder_content());
