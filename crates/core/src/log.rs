@@ -13,7 +13,7 @@ macro_rules! log {
     };
 
     (step: $format:literal $(, $($value:expr),* $(,)? )?) => {
-        log!(_status => "4", "┃", "\x1b[38;5;153m", $format $(, $($value),*)?);
+        log!(_status => "4", "┃", "\x1b[38;5;14m", $format $(, $($value),*)?);
     };
 
     (ok: $format:literal $(, $($value:expr),* $(,)? )?) => {
