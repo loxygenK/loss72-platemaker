@@ -6,6 +6,7 @@ mod code_block;
 mod footnote;
 mod frontmatter;
 mod text;
+mod link_card;
 
 pub trait SubParser<'p> {
     type Output;
@@ -23,6 +24,7 @@ pub struct SubParsers<'p> {
     pub footnote: footnote::FootnoteSubParser<'p>,
     pub frontmatter: frontmatter::FrontmatterSubParser,
     pub text: text::TextParser,
+    pub link_card: link_card::LinkCardParser,
 }
 
 impl<'p> SubParsers<'p> {
@@ -32,6 +34,7 @@ impl<'p> SubParsers<'p> {
         next.update_by(self.footnote.receive_event(next.next_event(event))?);
         next.update_by(self.frontmatter.receive_event(next.next_event(event))?);
         next.update_by(self.text.receive_event(next.next_event(event))?);
+        next.update_by(self.link_card.receive_event(next.next_event(event))?);
 
         EventProcessControl::Continue(next)
     }
