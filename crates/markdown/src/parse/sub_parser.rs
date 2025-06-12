@@ -5,8 +5,8 @@ use super::control::{EventProcessControl, Next};
 mod code_block;
 mod footnote;
 mod frontmatter;
-mod text;
 mod link_card;
+mod text;
 
 pub trait SubParser<'p> {
     type Output;
